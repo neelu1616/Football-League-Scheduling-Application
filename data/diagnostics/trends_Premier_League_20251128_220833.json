@@ -1,0 +1,56 @@
+{
+  "league_name": "Premier League",
+  "season": "2024-2025",
+  "analysis_window": 5,
+  "predictions": [
+    {
+      "team_name": "Manchester City",
+      "current_form": "good",
+      "win_probability": 0.6,
+      "expected_points_next_5_matches": 7.5,
+      "momentum_score": -3.0,
+      "trend": "down"
+    },
+    {
+      "team_name": "Liverpool",
+      "current_form": "poor",
+      "win_probability": 0.1,
+      "expected_points_next_5_matches": 5.0,
+      "momentum_score": 0.0,
+      "trend": "stable"
+    },
+    {
+      "team_name": "Arsenal",
+      "current_form": "poor",
+      "win_probability": 0.1,
+      "expected_points_next_5_matches": 2.5,
+      "momentum_score": 1.0,
+      "trend": "up"
+    },
+    {
+      "team_name": "Chelsea",
+      "current_form": "excellent",
+      "win_probability": 0.9,
+      "expected_points_next_5_matches": 15.0,
+      "momentum_score": 0.0,
+      "trend": "stable"
+    },
+    {
+      "team_name": "Manchester United",
+      "current_form": "good",
+      "win_probability": 0.6,
+      "expected_points_next_5_matches": 10.0,
+      "momentum_score": 2.0,
+      "trend": "up"
+    },
+    {
+      "team_name": "Tottenham",
+      "current_form": "poor",
+      "win_probability": 0.1,
+      "expected_points_next_5_matches": 0.0,
+      "momentum_score": 0.0,
+      "trend": "stable"
+    }
+  ],
+  "predicted_at": "2025-11-28T22:08:33.833867"
+}

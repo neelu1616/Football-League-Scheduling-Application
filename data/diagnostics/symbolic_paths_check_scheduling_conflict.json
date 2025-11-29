@@ -1,0 +1,56 @@
+{
+  "function_name": "check_scheduling_conflict",
+  "total_branches": 4,
+  "cyclomatic_complexity": 5,
+  "estimated_paths": 8,
+  "branches": [
+    {
+      "branch_id": 1,
+      "type": "if_statement",
+      "line": 4,
+      "condition": "not matches",
+      "true_path": "branch_1_true",
+      "false_path": "branch_1_false"
+    },
+    {
+      "branch_id": 2,
+      "type": "for_loop",
+      "line": 7,
+      "iteration_path": "branch_2_iterate",
+      "exit_path": "branch_2_exit"
+    },
+    {
+      "branch_id": 3,
+      "type": "if_statement",
+      "line": 8,
+      "condition": "match.week == week",
+      "true_path": "branch_3_true",
+      "false_path": "branch_3_false"
+    },
+    {
+      "branch_id": 4,
+      "type": "if_statement",
+      "line": 9,
+      "condition": "match.home_team_id == team_id or match.away_team_id == team_id",
+      "true_path": "branch_4_true",
+      "false_path": "branch_4_false"
+    }
+  ],
+  "symbolic_variables": [
+    "bool",
+    "int",
+    "list",
+    "match",
+    "matches",
+    "str",
+    "team_id",
+    "week"
+  ],
+  "analysis_notes": [
+    "Found 4 decision points",
+    "Estimated 8 unique execution paths",
+    "Cyclomatic complexity: 5",
+    "Use this information to guide symbolic/concolic testing"
+  ],
+  "analyzed_at": "2025-11-28T22:08:33.842455"
+}

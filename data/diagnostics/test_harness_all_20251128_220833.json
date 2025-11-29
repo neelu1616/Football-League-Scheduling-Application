@@ -1,0 +1,33 @@
+{
+  "test_suite": "all",
+  "coverage_threshold": 0.8,
+  "executed_at": "2025-11-28T22:08:33.840388",
+  "status": "below_threshold",
+  "message": "Coverage 72.0% is below threshold 80.0%",
+  "coverage": {
+    "line_coverage": 0.85,
+    "branch_coverage": 0.72,
+    "function_coverage": 0.9,
+    "uncovered_branches": [
+      {
+        "file": "src/domain/league.py",
+        "function": "add_team",
+        "line": 25,
+        "branch": "if any(t.team_id == team.team_id for t in self.teams)",
+        "condition": "false branch not covered"
+      },
+      {
+        "file": "src/scheduling/scheduler.py",
+        "function": "generate_round_robin",
+        "line": 45,
+        "branch": "if num_teams % 2 != 0",
+        "condition": "true branch not covered"
+      }
+    ],
+    "suggestions": [
+      "Add test case for duplicate team_id in add_team()",
+      "Add test case for odd number of teams in round-robin"
+    ]
+  },
+  "passed_threshold": false
+}

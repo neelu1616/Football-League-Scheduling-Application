@@ -1,0 +1,15 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+# Virtual environments
+.venv/
+venv/
+ENV/
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,61 @@
+{
+  "league_name": "Premier League",
+  "season": "2024-2025",
+  "workload_analysis": [
+    {
+      "team_id": "manchester_city",
+      "team_name": "Manchester City",
+      "total_travel_km": 696.49,
+      "avg_travel_per_match_km": 139.3,
+      "max_consecutive_away": 1,
+      "match_congestion_score": 1.0,
+      "avg_rest_days": 0.0
+    },
+    {
+      "team_id": "liverpool",
+      "team_name": "Liverpool",
+      "total_travel_km": 2144.65,
+      "avg_travel_per_match_km": 428.93,
+      "max_consecutive_away": 5,
+      "match_congestion_score": 1.0,
+      "avg_rest_days": 0.0
+    },
+    {
+      "team_id": "arsenal",
+      "team_name": "Arsenal",
+      "total_travel_km": 587.94,
+      "avg_travel_per_match_km": 117.59,
+      "max_consecutive_away": 1,
+      "match_congestion_score": 1.0,
+      "avg_rest_days": 0.0
+    },
+    {
+      "team_id": "chelsea",
+      "team_name": "Chelsea",
+      "total_travel_km": 1516.63,
+      "avg_travel_per_match_km": 303.33,
+      "max_consecutive_away": 3,
+      "match_congestion_score": 1.0,
+      "avg_rest_days": 0.0
+    },
+    {
+      "team_id": "manchester_united",
+      "team_name": "Manchester United",
+      "total_travel_km": 1089.32,
+      "avg_travel_per_match_km": 217.86,
+      "max_consecutive_away": 1,
+      "match_congestion_score": 1.0,
+      "avg_rest_days": 0.0
+    },
+    {
+      "team_id": "tottenham",
+      "team_name": "Tottenham",
+      "total_travel_km": 979.98,
+      "avg_travel_per_match_km": 196.0,
+      "max_consecutive_away": 1,
+      "match_congestion_score": 1.0,
+      "avg_rest_days": 0.0
+    }
+  ],
+  "analyzed_at": "2025-11-28T22:08:33.830836"
+}

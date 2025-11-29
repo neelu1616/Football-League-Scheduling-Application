@@ -1,0 +1,57 @@
+{
+  "name": "Demo Premier League",
+  "season": "2024-2025",
+  "teams": [
+    {
+      "team_id": "manchester_city",
+      "name": "Manchester City",
+      "stadium": "Etihad Stadium",
+      "played": 0,
+      "won": 0,
+      "drawn": 0,
+      "lost": 0,
+      "goals_for": 0,
+      "goals_against": 0,
+      "points": 0
+    },
+    {
+      "team_id": "liverpool",
+      "name": "Liverpool",
+      "stadium": "Anfield",
+      "played": 0,
+      "won": 0,
+      "drawn": 0,
+      "lost": 0,
+      "goals_for": 0,
+      "goals_against": 0,
+      "points": 0
+    },
+    {
+      "team_id": "arsenal",
+      "name": "Arsenal",
+      "stadium": "Emirates Stadium",
+      "played": 0,
+      "won": 0,
+      "drawn": 0,
+      "lost": 0,
+      "goals_for": 0,
+      "goals_against": 0,
+      "points": 0
+    },
+    {
+      "team_id": "chelsea",
+      "name": "Chelsea",
+      "stadium": "Stamford Bridge",
+      "played": 0,
+      "won": 0,
+      "drawn": 0,
+      "lost": 0,
+      "goals_for": 0,
+      "goals_against": 0,
+      "points": 0
+    }
+  ],
+  "matches": [],
+  "fixtures_generated": false,
+  "saved_at": "2025-11-28T22:20:50.779623"
+}

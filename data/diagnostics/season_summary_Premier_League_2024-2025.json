@@ -1,0 +1,131 @@
+{
+  "league_name": "Premier League",
+  "season": "2024-2025",
+  "total_teams": 6,
+  "total_matches": 15,
+  "matches_played": 6,
+  "matches_remaining": 9,
+  "statistics": {
+    "total_goals": 18,
+    "average_goals_per_match": 3.0,
+    "home_wins": 2,
+    "away_wins": 2,
+    "draws": 2,
+    "home_win_percentage": 33.3
+  },
+  "highlights": [
+    {
+      "category": "top_scoring_team",
+      "description": "Highest scoring team",
+      "value": {
+        "team": "Chelsea",
+        "goals": 5
+      },
+      "match_id": null
+    },
+    {
+      "category": "best_defense",
+      "description": "Fewest goals conceded",
+      "value": {
+        "team": "Chelsea",
+        "goals_conceded": 1
+      },
+      "match_id": null
+    },
+    {
+      "category": "most_wins",
+      "description": "Most victories",
+      "value": {
+        "team": "Chelsea",
+        "wins": 2
+      },
+      "match_id": null
+    },
+    {
+      "category": "biggest_win",
+      "description": "Largest victory margin",
+      "value": {
+        "match": "Manchester City 3-1 Tottenham",
+        "margin": 2,
+        "winner": "Manchester City"
+      },
+      "match_id": "w1_manchester_city_vs_tottenham"
+    },
+    {
+      "category": "most_clean_sheets",
+      "description": "Most clean sheets",
+      "value": {
+        "team": "Chelsea",
+        "clean_sheets": 1
+      },
+      "match_id": null
+    },
+    {
+      "category": "highest_scoring_match",
+      "description": "Most goals in a single match",
+      "value": {
+        "match": "Manchester City 3-1 Tottenham",
+        "total_goals": 4
+      },
+      "match_id": "w1_manchester_city_vs_tottenham"
+    }
+  ],
+  "top_teams": [
+    {
+      "position": 1,
+      "team": "Chelsea",
+      "points": 6,
+      "wins": 2,
+      "draws": 0,
+      "losses": 0,
+      "goals_for": 5,
+      "goals_against": 1,
+      "goal_difference": 4
+    },
+    {
+      "position": 2,
+      "team": "Manchester United",
+      "points": 4,
+      "wins": 1,
+      "draws": 1,
+      "losses": 0,
+      "goals_for": 3,
+      "goals_against": 1,
+      "goal_difference": 2
+    },
+    {
+      "position": 3,
+      "team": "Manchester City",
+      "points": 3,
+      "wins": 1,
+      "draws": 0,
+      "losses": 1,
+      "goals_for": 3,
+      "goals_against": 3,
+      "goal_difference": 0
+    },
+    {
+      "position": 4,
+      "team": "Liverpool",
+      "points": 2,
+      "wins": 0,
+      "draws": 2,
+      "losses": 0,
+      "goals_for": 3,
+      "goals_against": 3,
+      "goal_difference": 0
+    },
+    {
+      "position": 5,
+      "team": "Arsenal",
+      "points": 1,
+      "wins": 0,
+      "draws": 1,
+      "losses": 1,
+      "goals_for": 2,
+      "goals_against": 4,
+      "goal_difference": -2
+    }
+  ],
+  "generated_at": "2025-11-28T22:08:33.835377"
+}

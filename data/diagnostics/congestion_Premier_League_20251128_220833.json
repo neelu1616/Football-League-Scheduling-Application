@@ -1,0 +1,153 @@
+{
+  "league_name": "Premier League",
+  "season": "2024-2025",
+  "congestion_threshold": 3,
+  "total_zones": 18,
+  "congestion_zones": [
+    {
+      "weeks": "1-3",
+      "affected_teams": [
+        "Manchester City"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "2-4",
+      "affected_teams": [
+        "Manchester City"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "3-5",
+      "affected_teams": [
+        "Manchester City"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "1-3",
+      "affected_teams": [
+        "Liverpool"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "2-4",
+      "affected_teams": [
+        "Liverpool"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "3-5",
+      "affected_teams": [
+        "Liverpool"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "1-3",
+      "affected_teams": [
+        "Arsenal"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "2-4",
+      "affected_teams": [
+        "Arsenal"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "3-5",
+      "affected_teams": [
+        "Arsenal"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "1-3",
+      "affected_teams": [
+        "Chelsea"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "2-4",
+      "affected_teams": [
+        "Chelsea"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "3-5",
+      "affected_teams": [
+        "Chelsea"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "1-3",
+      "affected_teams": [
+        "Manchester United"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "2-4",
+      "affected_teams": [
+        "Manchester United"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "3-5",
+      "affected_teams": [
+        "Manchester United"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "1-3",
+      "affected_teams": [
+        "Tottenham"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "2-4",
+      "affected_teams": [
+        "Tottenham"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    },
+    {
+      "weeks": "3-5",
+      "affected_teams": [
+        "Tottenham"
+      ],
+      "match_density": 1.0,
+      "severity": "low"
+    }
+  ],
+  "analyzed_at": "2025-11-28T22:08:33.832836"
+}

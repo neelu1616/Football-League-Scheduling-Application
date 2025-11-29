@@ -1,0 +1,48 @@
+{
+  "league_name": "Premier League",
+  "season": "2024-2025",
+  "rules_checked": {
+    "min_rest_days": 3,
+    "min_weeks_between_same_opponent": 3,
+    "max_consecutive_same_venue": 3
+  },
+  "total_violations": 3,
+  "by_severity": {
+    "critical": 0,
+    "warning": 3,
+    "info": 0
+  },
+  "violations": [
+    {
+      "rule": "max_consecutive_away_games",
+      "severity": "warning",
+      "description": "Team 'Liverpool' has 4 consecutive away games",
+      "affected_entities": [
+        "liverpool",
+        "w4_chelsea_vs_liverpool"
+      ],
+      "suggestion": "Balance home/away distribution - max 3 consecutive games at same venue"
+    },
+    {
+      "rule": "max_consecutive_away_games",
+      "severity": "warning",
+      "description": "Team 'Liverpool' has 5 consecutive away games",
+      "affected_entities": [
+        "liverpool",
+        "w5_manchester_city_vs_liverpool"
+      ],
+      "suggestion": "Balance home/away distribution - max 3 consecutive games at same venue"
+    },
+    {
+      "rule": "max_consecutive_home_games",
+      "severity": "warning",
+      "description": "Team 'Arsenal' has 4 consecutive home games",
+      "affected_entities": [
+        "arsenal",
+        "w4_arsenal_vs_manchester_city"
+      ],
+      "suggestion": "Balance home/away distribution - max 3 consecutive games at same venue"
+    }
+  ],
+  "checked_at": "2025-11-28T22:08:33.833867"
+}
