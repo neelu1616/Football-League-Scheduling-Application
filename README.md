@@ -10,7 +10,7 @@ A comprehensive Football League Management System implementing Agile, software m
 - **Mahir** - League & Team Management (Member A)
 - **Abhishek** - Scheduling Engine & Constraints (Member B)
 - **Neel** - Ranking, Results & Presentation (Member C)
-- **Dhawal** - Metrics, Testing & Symbolic/Concolic Analysis (Member D)
+- **Dhaval** - Metrics, Testing & Symbolic/Concolic Analysis (Member D)
 
 ## Project Structure
 
@@ -72,7 +72,7 @@ root/
 - ✅ C8: Export Results/Standings
 - ✅ C9: Head-to-Head Statistics Dashboard
 
-### Member D (Dhawal) - Diagnostics & Analytics
+### Member D (Dhaval) - Diagnostics & Analytics
 - ✅ D1: Detect Scheduling Anomalies
 - ✅ D2: Analyse Team Workload Distribution
 - ✅ D3: Identify Fixture Congestion Zones
@@ -245,4 +245,4 @@ For questions or issues, contact the development team:
 - Mahir (Member A)
 - Abhishek (Member B)
 - Neel (Member C)
-- Dhawal (Member D)
+- Dhaval (Member D)
