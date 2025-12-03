@@ -63,3 +63,49 @@ class ResultsManager:
         self.table.update_from_match(match, home_team, away_team)
         
         return True, f"Result recorded: {match.home_team_name} {home_score}-{away_score} {match.away_team_name}"
+
+    def get_league_table(self) -> List[dict]:
+      
+        if not self.table:
+            return []
+        
+        return self.table.get_table_data()
+    
+    def display_table(self) -> str:
+        
+        if not self.table:
+            return "No league table available"
+        
+        table_data = self.get_league_table()
+        
+        if not table_data:
+            return "League table is empty"
+        
+       
+        lines = []
+        lines.append("=" * 90)
+        lines.append(f"LEAGUE TABLE - {self.league.name if self.league else 'Unknown'}")
+        lines.append("=" * 90)
+        
+        header = f"{'Pos':<4} {'Team':<25} {'P':<3} {'W':<3} {'D':<3} {'L':<3} {'GF':<4} {'GA':<4} {'GD':<5} {'Pts':<4}"
+        lines.append(header)
+        lines.append("-" * 90)
+        
+        for row in table_data:
+            line = (
+                f"{row['position']:<4} "
+                f"{row['team']:<25} "
+                f"{row['played']:<3} "
+                f"{row['won']:<3} "
+                f"{row['drawn']:<3} "
+                f"{row['lost']:<3} "
+                f"{row['goals_for']:<4} "
+                f"{row['goals_against']:<4} "
+                f"{row['goal_difference']:+5} "
+                f"{row['points']:<4}"
+            )
+            lines.append(line)
+        
+        lines.append("=" * 90)
+        
+        return "\n".join(lines)
