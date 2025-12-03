@@ -1,3 +1,5 @@
+
+
 import sys
 from pathlib import Path
 from typing import List, Optional, Dict, Tuple
@@ -5,6 +7,9 @@ import csv
 from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+# C2 UPDATE LEAGUE RESULTS
+
 
 from src.domain.league import League
 from src.domain.team import Team
