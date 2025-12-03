@@ -88,4 +88,26 @@ class FixtureScheduler:
         
         return True, f"B1 Complete: Generated {total_rounds} rounds of round-robin fixtures"
     
+    def apply_home_away_rotation(self) -> tuple[bool, str]:
+        """
+        B2: Generate Home/Away Rotation.
+        Balances home and away fixtures to ensure fairness.
+        Each team gets balanced home and away matches.
+        
+        Returns:
+            tuple: (success, message)
+        """
+        if not hasattr(self, '_rounds') or not self._rounds:
+            return False, "Must generate round-robin fixtures first (B1)"
+        
+        # Balance home/away rotation (B2 specific functionality)
+        balanced_rounds = balance_home_away_rotation(self._rounds)
+        
+        # Store balanced rounds for next story
+        self._balanced_rounds = balanced_rounds
+        
+        total_rounds = len(balanced_rounds)
+        
+        return True, f"B2 Complete: Applied home/away rotation across {total_rounds} rounds"
+    
     
