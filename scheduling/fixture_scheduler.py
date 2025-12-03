@@ -110,4 +110,85 @@ class FixtureScheduler:
         
         return True, f"B2 Complete: Applied home/away rotation across {total_rounds} rounds"
     
+    def organize_fixtures_by_week(self, start_date: Optional[str] = None) -> tuple[bool, str]:
+        """
+        B3: Week-by-Week Schedule Generation.
+        Organizes fixtures into weekly schedules with dates.
+        Ensures one match per team per week (B4 requirement).
+        
+        Args:
+            start_date: Starting date for fixtures (format: YYYY-MM-DD)
+        
+        Returns:
+            tuple: (success, message)
+        """
+        if not hasattr(self, '_balanced_rounds') or not self._balanced_rounds:
+            return False, "Must apply home/away rotation first (B2)"
+        
+        # B3: Organize into weeks with dates
+        week_num = 1
+        base_date = datetime.strptime(start_date, "%Y-%m-%d") if start_date else datetime.now()
+        
+        for round_matches in self._balanced_rounds:
+            # Calculate date for this week
+            week_date = base_date + timedelta(weeks=week_num - 1)
+            date_str = week_date.strftime("%Y-%m-%d")
+            
+            for home, away in round_matches:
+                match_id = f"w{week_num}_{home.team_id}_vs_{away.team_id}"
+                
+                match = Match(
+                    match_id=match_id,
+                    home_team_id=home.team_id,
+                    away_team_id=away.team_id,
+                    home_team_name=home.name,
+                    away_team_name=away.name,
+                    week=week_num,
+                    scheduled_date=date_str
+                )
+                
+                self.league.matches.append(match)
+            
+            week_num += 1
+        
+        self.league.fixtures_generated = True
+        
+        total_matches = len(self.league.matches)
+        total_weeks = week_num - 1
+        
+        return True, f"B3 Complete: Organized {total_matches} fixtures into {total_weeks} weeks"
     
+    def generate_fixtures(self, start_date: Optional[str] = None) -> tuple[bool, str]:
+        """
+        Generate full fixture schedule by executing B1, B2, and B3 sequentially.
+        
+        This is a convenience method that orchestrates all three stories:
+        - B1: Generate Round-Robin Fixtures
+        - B2: Apply Home/Away Rotation
+        - B3: Organize Week-by-Week Schedule
+        
+        Args:
+            start_date: Starting date for fixtures (format: YYYY-MM-DD)
+        
+        Returns:
+            tuple: (success, message)
+        """
+        # Execute B1: Generate round-robin fixtures
+        success, message = self.generate_round_robin_fixtures()
+        if not success:
+            return False, message
+        
+        # Execute B2: Apply home/away rotation
+        success, message = self.apply_home_away_rotation()
+        if not success:
+            return False, message
+        
+        # Execute B3: Organize by week
+        success, message = self.organize_fixtures_by_week(start_date)
+        if not success:
+            return False, message
+        
+        total_matches = len(self.league.matches)
+        total_weeks = (len(self.league.matches) // len(self.league.teams)) if self.league.teams else 0
+        
+        return True, f"All fixtures generated successfully: {total_matches} matches across {total_weeks} weeks"
