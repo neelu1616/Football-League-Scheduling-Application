@@ -31,3 +31,11 @@ class LeagueManager:
         
         self.current_league = League(name=name.strip(), season=season.strip())
         return True, f"League '{name}' created for season {season}", self.current_league
+    
+    def add_team(self, name: str, stadium: str) -> tuple[bool, str]:
+        
+        if not self.current_league:
+            return False, "No active league. Create a league first."
+        
+        team = Team(name=name.strip(), stadium=stadium.strip())
+        return self.current_league.add_team(team)
