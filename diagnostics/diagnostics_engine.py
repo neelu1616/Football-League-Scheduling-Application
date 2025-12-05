@@ -477,3 +477,93 @@ class DiagnosticsEngine:
                 json.dump(result, f, indent=2)
         
         return workload_metrics
+    
+
+    def identify_fixture_congestion(self, league: League, congestion_threshold: int = 3,
+                                   save_results: bool = True) -> List[CongestionZone]:
+        """
+        D3: Identify fixture congestion zones - weeks where teams have tightly
+        packed schedules.
+        
+        Args:
+            league: League object with teams and matches
+            congestion_threshold: Number of matches in a window to flag congestion
+            save_results: Whether to save results to file
+        
+        Returns:
+            List of congestion zones
+        """
+        congestion_zones: List[CongestionZone] = []
+        
+        # Analyze each team's schedule
+        for team in league.teams:
+            team_matches = sorted([m for m in league.matches if m.home_team_id == team.team_id or m.away_team_id == team.team_id],
+                                key=lambda m: m.week)
+            
+            if len(team_matches) < congestion_threshold:
+                continue
+            
+            # Use sliding window to find congested periods
+            window_size = 3  # Check 3-week windows
+            
+            for i in range(len(team_matches) - congestion_threshold + 1):
+                window_matches = team_matches[i:i+congestion_threshold]
+                
+                if len(window_matches) < congestion_threshold:
+                    continue
+                
+                week_start = window_matches[0].week
+                week_end = window_matches[-1].week
+                week_span = week_end - week_start + 1
+                
+                # If 3+ matches within 3 weeks, it's congested
+                if week_span <= window_size:
+                    match_density = len(window_matches) / week_span
+                    
+                    # Determine severity
+                    if match_density >= 2.0:
+                        severity = "high"
+                    elif match_density >= 1.5:
+                        severity = "medium"
+                    else:
+                        severity = "low"
+                    
+                    # Check if this zone already exists
+                    existing = next((cz for cz in congestion_zones 
+                                   if cz.week_start == week_start and cz.week_end == week_end
+                                   and team.team_id in cz.affected_teams), None)
+                    
+                    if not existing:
+                        congestion_zones.append(CongestionZone(
+                            week_start=week_start,
+                            week_end=week_end,
+                            affected_teams=[team.team_id],
+                            match_density=round(match_density, 2),
+                            severity=severity
+                        ))
+                    elif team.team_id not in existing.affected_teams:
+                        existing.affected_teams.append(team.team_id)
+        
+        if save_results:
+            result = {
+                "league_name": league.name,
+                "season": league.season,
+                "congestion_threshold": congestion_threshold,
+                "total_zones": len(congestion_zones),
+                "congestion_zones": [
+                    {
+                        "weeks": f"{cz.week_start}-{cz.week_end}",
+                        "affected_teams": [league.get_team_by_id(tid).name if league.get_team_by_id(tid) else tid 
+                                         for tid in cz.affected_teams],
+                        "match_density": cz.match_density,
+                        "severity": cz.severity
+                    } for cz in congestion_zones
+                ],
+                "analyzed_at": datetime.now().isoformat()
+            }
+            
+            filepath = self.data_dir / f"congestion_{league.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            with open(filepath, 'w') as f:
+                json.dump(result, f, indent=2)
+        
+        return congestion_zones
