@@ -367,3 +367,113 @@ class DiagnosticsEngine:
                 json.dump(result, f, indent=2)
         
         return anomalies
+    
+    def analyse_team_workload(self, league: League, save_results: bool = True) -> List[WorkloadMetrics]:
+        """
+        D2: Analyse team workload distribution including travel burden, consecutive
+        away games, and match congestion.
+        
+        Uses fictional stadium coordinates to simulate travel distances.
+        Has high cyclomatic complexity (CC > 10) due to multiple metrics calculations.
+        
+        Args:
+            league: League object with teams and matches
+            save_results: Whether to save results to file
+        
+        Returns:
+            List of workload metrics for each team
+        """
+        # Generate stadium locations if not already done
+        if not self.stadium_locations:
+            self._generate_stadium_locations(league.teams)
+        
+        workload_metrics: List[WorkloadMetrics] = []
+        
+        for team in league.teams:
+            # Get all matches for this team
+            team_matches = [m for m in league.matches if m.home_team_id == team.team_id or m.away_team_id == team.team_id]
+            team_matches.sort(key=lambda m: m.week)
+            
+            if not team_matches:
+                continue
+            
+            # Calculate travel burden
+            total_distance = 0.0
+            for match in team_matches:
+                if match.away_team_id == team.team_id:
+                    # Away game - team travels to opponent's stadium
+                    opponent_id = match.home_team_id
+                    if team.team_id in self.stadium_locations and opponent_id in self.stadium_locations:
+                        distance = self._calculate_distance(
+                            self.stadium_locations[team.team_id],
+                            self.stadium_locations[opponent_id]
+                        )
+                        total_distance += distance * 2  # Round trip
+            
+            avg_distance = total_distance / len(team_matches) if team_matches else 0.0
+            
+            # Count consecutive away games
+            consecutive_away = 0
+            max_consecutive_away = 0
+            current_streak = 0
+            
+            for match in team_matches:
+                if match.away_team_id == team.team_id:
+                    current_streak += 1
+                    max_consecutive_away = max(max_consecutive_away, current_streak)
+                else:
+                    current_streak = 0
+            
+            consecutive_away = max_consecutive_away
+            
+            # Calculate match congestion score
+            # Higher score = more congested schedule
+            weeks_with_matches = {m.week for m in team_matches}
+            if len(weeks_with_matches) > 1:
+                week_span = max(weeks_with_matches) - min(weeks_with_matches) + 1
+                congestion_score = len(team_matches) / week_span
+            else:
+                congestion_score = float(len(team_matches))
+            
+            # Calculate average rest days
+            rest_days_list: List[int] = []
+            for i in range(len(team_matches) - 1):
+                rest_days = (team_matches[i+1].week - team_matches[i].week - 1) * 7
+                rest_days_list.append(rest_days)
+            
+            avg_rest_days = sum(rest_days_list) / len(rest_days_list) if rest_days_list else 0.0
+            
+            workload_metrics.append(WorkloadMetrics(
+                team_id=team.team_id,
+                team_name=team.name,
+                total_distance=round(total_distance, 2),
+                average_distance_per_match=round(avg_distance, 2),
+                consecutive_away_games=consecutive_away,
+                max_consecutive_away=max_consecutive_away,
+                match_congestion_score=round(congestion_score, 3),
+                rest_days_avg=round(avg_rest_days, 1)
+            ))
+        
+        if save_results:
+            result = {
+                "league_name": league.name,
+                "season": league.season,
+                "workload_analysis": [
+                    {
+                        "team_id": wm.team_id,
+                        "team_name": wm.team_name,
+                        "total_travel_km": wm.total_distance,
+                        "avg_travel_per_match_km": wm.average_distance_per_match,
+                        "max_consecutive_away": wm.max_consecutive_away,
+                        "match_congestion_score": wm.match_congestion_score,
+                        "avg_rest_days": wm.rest_days_avg
+                    } for wm in workload_metrics
+                ],
+                "analyzed_at": datetime.now().isoformat()
+            }
+            
+            filepath = self.data_dir / f"workload_{league.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            with open(filepath, 'w') as f:
+                json.dump(result, f, indent=2)
+        
+        return workload_metrics
