@@ -39,3 +39,27 @@ class LeagueManager:
         
         team = Team(name=name.strip(), stadium=stadium.strip())
         return self.current_league.add_team(team)
+    def edit_team(self, team_identifier: str, new_name: Optional[str] = None, 
+                  new_stadium: Optional[str] = None) -> tuple[bool, str]:
+        """
+        A4: Edit team details.
+        
+        Args:
+            team_identifier: Team name or ID
+            new_name: New team name (optional)
+            new_stadium: New stadium name (optional)
+        
+        Returns:
+            tuple: (success, message)
+        """
+        if not self.current_league:
+            return False, "No active league"
+        
+        team = self.current_league.get_team_by_name(team_identifier)
+        if not team:
+            team = self.current_league.get_team_by_id(team_identifier)
+        
+        if not team:
+            return False, f"Team '{team_identifier}' not found"
+        
+        return self.current_league.edit_team(team.team_id, new_name, new_stadium)
