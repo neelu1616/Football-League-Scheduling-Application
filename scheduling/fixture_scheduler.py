@@ -192,6 +192,41 @@ class FixtureScheduler:
         total_weeks = (len(self.league.matches) // len(self.league.teams)) if self.league.teams else 0
         
         return True, f"All fixtures generated successfully: {total_matches} matches across {total_weeks} weeks"
+    
+    def reschedule_match(self, match_id: str, new_week: int) -> tuple[bool, str]:
+        """
+        B5: Reschedule a match to another week.
+        B4: Validates no clashes in the new week.
+        
+        Args:
+            match_id: ID of the match to reschedule
+            new_week: New week number
+        
+        Returns:
+            tuple: (success, message)
+        """
+        if not self.league:
+            return False, "No league set"
+        
+        # Find the match
+        match = next((m for m in self.league.matches if m.match_id == match_id), None)
+        if not match:
+            return False, f"Match '{match_id}' not found"
+        
+        if match.played:
+            return False, "Cannot reschedule a match that has been played"
+        
+        # B4: Check for clashes in new week
+        has_clash, clash_msg = self._check_week_clash(match.home_team_id, match.away_team_id, 
+                                                       new_week, exclude_match_id=match_id)
+        if has_clash:
+            return False, f"Clash detected: {clash_msg}"
+        
+        old_week = match.week
+        match.week = new_week
+        
+        return True, f"Match rescheduled from week {old_week} to week {new_week}"
+
     def _check_week_clash(self, team1_id: str, team2_id: str, week: int, 
                          exclude_match_id: Optional[str] = None) -> tuple[bool, str]:
         """
