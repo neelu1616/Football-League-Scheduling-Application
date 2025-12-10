@@ -105,6 +105,61 @@ class ResultsManager:
             lines.append(line)
         
         lines.append("=" * 90)
-        
+
         
         return "\n".join(lines)
+         
+         def get_team_form(self, team_identifier: str) -> dict:
+       
+        if not self.league:
+            return {}
+        
+        team = self.league.get_team_by_name(team_identifier)
+        if not team:
+            team = self.league.get_team_by_id(team_identifier)
+        
+        if not team:
+            return {}
+        
+       
+        recent_matches = []
+        form = []
+        
+        for match in self.league.matches:
+            if not match.is_played:
+                continue
+            
+            if match.home_team_id == team.team_id:
+                recent_matches.append(match)
+                if match.home_score > match.away_score:
+                    form.append('W')
+                elif match.home_score < match.away_score:
+                    form.append('L')
+                else:
+                    form.append('D')
+            
+            elif match.away_team_id == team.team_id:
+                recent_matches.append(match)
+                if match.away_score > match.home_score:
+                    form.append('W')
+                elif match.away_score < match.home_score:
+                    form.append('L')
+                else:
+                    form.append('D')
+        
+        
+        form = form[-5:] if len(form) > 5 else form
+        
+        return {
+            "team": team.name,
+            "played": team.played,
+            "won": team.won,
+            "drawn": team.drawn,
+            "lost": team.lost,
+            "goals_for": team.goals_for,
+            "goals_against": team.goals_against,
+            "goal_difference": team.goal_difference,
+            "points": team.points,
+            "form": "".join(form),
+            "win_percentage": (team.won / team.played * 100) if team.played > 0 else 0
+        }
