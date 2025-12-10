@@ -192,3 +192,28 @@ class FixtureScheduler:
         total_weeks = (len(self.league.matches) // len(self.league.teams)) if self.league.teams else 0
         
         return True, f"All fixtures generated successfully: {total_matches} matches across {total_weeks} weeks"
+    def _check_week_clash(self, team1_id: str, team2_id: str, week: int, 
+                         exclude_match_id: Optional[str] = None) -> tuple[bool, str]:
+        """
+        B4: Check if teams already have matches in the given week.
+        
+        Returns:
+            tuple: (has_clash, message)
+        """
+        if not self.league:
+            return False, ""
+        
+        for match in self.league.matches:
+            if exclude_match_id and match.match_id == exclude_match_id:
+                continue
+            
+            if match.week != week:
+                continue
+            
+            if match.home_team_id == team1_id or match.away_team_id == team1_id:
+                return True, f"Team {team1_id} already has a match in week {week}"
+            
+            if match.home_team_id == team2_id or match.away_team_id == team2_id:
+                return True, f"Team {team2_id} already has a match in week {week}"
+        
+        return False, ""
