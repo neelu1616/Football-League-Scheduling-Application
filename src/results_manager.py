@@ -163,3 +163,16 @@ class ResultsManager:
             "form": "".join(form),
             "win_percentage": (team.won / team.played * 100) if team.played > 0 else 0
         }
+        def get_weekly_fixtures(self, week: Optional[int] = None) -> Dict[int, List[dict]]:
+       
+        if not self.league:
+            return {}
+        
+        fixtures_by_week = defaultdict(list)
+        
+        for match in self.league.matches:
+            if week is None or match.week == week:
+                fixtures_by_week[match.week].append(match.to_dict())
+        
+        return dict(fixtures_by_week)
+    
