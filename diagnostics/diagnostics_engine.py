@@ -696,3 +696,124 @@ class DiagnosticsEngine:
             json.dump(result, f, indent=2)
     
     return violations
+
+
+
+    def predict_outcome_trends(self, league: League, window_size: int = 5,
+                              save_results: bool = True) -> List[TrendPrediction]:
+
+        predictions: List[TrendPrediction] = []
+        
+        for team in league.teams:
+            team_matches = [m for m in league.matches 
+                          if (m.home_team_id == team.team_id or m.away_team_id == team.team_id)
+                          and m.is_played]
+            team_matches.sort(key=lambda m: m.week)
+            
+            if not team_matches:
+                predictions.append(TrendPrediction(
+                    team_id=team.team_id,
+                    team_name=team.name,
+                    current_form="unknown",
+                    win_probability=0.33,
+                    expected_points_next_5=0.0,
+                    momentum_score=0.0,
+                    trend_direction="stable"
+                ))
+                continue
+            
+            recent_matches = team_matches[-window_size:]
+            
+            wins = 0
+            draws = 0
+            losses = 0
+            goals_for = 0
+            goals_against = 0
+            
+            for match in recent_matches:
+                is_home = match.home_team_id == team.team_id
+                team_score = match.home_score if is_home else match.away_score
+                opponent_score = match.away_score if is_home else match.home_score
+                
+                goals_for += team_score
+                goals_against += opponent_score
+                
+                if team_score > opponent_score:
+                    wins += 1
+                elif team_score == opponent_score:
+                    draws += 1
+                else:
+                    losses += 1
+            
+            total_matches = len(recent_matches)
+            win_rate = wins / total_matches if total_matches > 0 else 0.0
+            points_per_game = (wins * 3 + draws) / total_matches if total_matches > 0 else 0.0
+            
+            if win_rate >= 0.7:
+                current_form = "excellent"
+            elif win_rate >= 0.5:
+                current_form = "good"
+            elif win_rate >= 0.3:
+                current_form = "average"
+            else:
+                current_form = "poor"
+            
+            momentum_score = 0.0
+            if len(recent_matches) >= 2:
+                mid_point = len(recent_matches) // 2
+                first_half = recent_matches[:mid_point]
+                second_half = recent_matches[mid_point:]
+                
+                first_half_ppg = sum(3 if (m.home_score > m.away_score if m.home_team_id == team.team_id else m.away_score > m.home_score) 
+                                    else (1 if m.home_score == m.away_score else 0) 
+                                    for m in first_half) / len(first_half) if first_half else 0
+                
+                second_half_ppg = sum(3 if (m.home_score > m.away_score if m.home_team_id == team.team_id else m.away_score > m.home_score)
+                                     else (1 if m.home_score == m.away_score else 0)
+                                     for m in second_half) / len(second_half) if second_half else 0
+                
+                momentum_score = second_half_ppg - first_half_ppg
+            
+            if momentum_score > 0.5:
+                trend_direction = "up"
+            elif momentum_score < -0.5:
+                trend_direction = "down"
+            else:
+                trend_direction = "stable"
+            
+            win_probability = min(0.9, max(0.1, win_rate * 1.2))
+            expected_points_next_5 = points_per_game * 5
+            
+            predictions.append(TrendPrediction(
+                team_id=team.team_id,
+                team_name=team.name,
+                current_form=current_form,
+                win_probability=round(win_probability, 3),
+                expected_points_next_5=round(expected_points_next_5, 1),
+                momentum_score=round(momentum_score, 3),
+                trend_direction=trend_direction
+            ))
+        
+        if save_results:
+            result = {
+                "league_name": league.name,
+                "season": league.season,
+                "analysis_window": window_size,
+                "predictions": [
+                    {
+                        "team_name": p.team_name,
+                        "current_form": p.current_form,
+                        "win_probability": p.win_probability,
+                        "expected_points_next_5_matches": p.expected_points_next_5,
+                        "momentum_score": p.momentum_score,
+                        "trend": p.trend_direction
+                    } for p in predictions
+                ],
+                "predicted_at": datetime.now().isoformat()
+            }
+            
+            filepath = self.data_dir / f"trends_{league.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            with open(filepath, 'w') as f:
+                json.dump(result, f, indent=2)
+        
+        return predictions
