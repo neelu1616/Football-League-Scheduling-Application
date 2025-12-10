@@ -63,3 +63,37 @@ class LeagueManager:
             return False, f"Team '{team_identifier}' not found"
         
         return self.current_league.edit_team(team.team_id, new_name, new_stadium)
+    
+    def save_league(self, filename: Optional[str] = None) -> tuple[bool, str]:
+        """
+        A5: Persist league and team data to JSON file.
+        
+        Args:
+            filename: Custom filename (optional, auto-generated if not provided)
+        
+        Returns:
+            tuple: (success, message)
+        """
+        if not self.current_league:
+            return False, "No active league to save"
+        
+        if not filename:
+            # Auto-generate filename from league name and season
+            safe_name = self.current_league.name.lower().replace(" ", "_")
+            safe_season = self.current_league.season.replace("/", "-")
+            filename = f"{safe_name}_{safe_season}.json"
+        
+        filepath = self.data_dir / filename
+        
+        try:
+            data = self.current_league.to_dict()
+            data["saved_at"] = datetime.now().isoformat()
+            
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            
+            return True, f"League saved to {filepath}"
+        
+        except Exception as e:
+            return False, f"Failed to save league: {str(e)}"
+    
