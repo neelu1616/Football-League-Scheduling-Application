@@ -14,6 +14,11 @@ from src.domain.team import Team
 
 class LeagueManager:
     
+    # Validation constants for A6
+    MIN_TEAM_NAME_LENGTH = 2
+    MAX_TEAM_NAME_LENGTH = 50
+    MIN_STADIUM_NAME_LENGTH = 2
+    MAX_STADIUM_NAME_LENGTH = 100
     
     def __init__(self, data_dir: str = "data"):
        
@@ -32,10 +37,52 @@ class LeagueManager:
         self.current_league = League(name=name.strip(), season=season.strip())
         return True, f"League '{name}' created for season {season}", self.current_league
     
-    def add_team(self, name: str, stadium: str) -> tuple[bool, str]:
+    def validate_team_data(self, name: str, stadium: str) -> tuple[bool, str]:
+        """
+        A6: Validate team data according to business rules.
         
+        Args:
+            name: Team name
+            stadium: Stadium name
+        
+        Returns:
+            tuple: (is_valid, error_message)
+        """
+        # Validate team name
+        if not name or len(name.strip()) < self.MIN_TEAM_NAME_LENGTH:
+            return False, f"Team name must be at least {self.MIN_TEAM_NAME_LENGTH} characters"
+        
+        if len(name.strip()) > self.MAX_TEAM_NAME_LENGTH:
+            return False, f"Team name must not exceed {self.MAX_TEAM_NAME_LENGTH} characters"
+        
+        # Validate stadium name
+        if not stadium or len(stadium.strip()) < self.MIN_STADIUM_NAME_LENGTH:
+            return False, f"Stadium name must be at least {self.MIN_STADIUM_NAME_LENGTH} characters"
+        
+        if len(stadium.strip()) > self.MAX_STADIUM_NAME_LENGTH:
+            return False, f"Stadium name must not exceed {self.MAX_STADIUM_NAME_LENGTH} characters"
+        
+        return True, ""
+    
+    def add_team(self, name: str, stadium: str) -> tuple[bool, str]:
+        """
+        A2: Add a team to the current league.
+        A6: Validate team data before adding.
+        
+        Args:
+            name: Team name
+            stadium: Stadium name
+        
+        Returns:
+            tuple: (success, message)
+        """
         if not self.current_league:
             return False, "No active league. Create a league first."
+        
+        # A6: Validate team data
+        is_valid, error_msg = self.validate_team_data(name, stadium)
+        if not is_valid:
+            return False, error_msg
         
         team = Team(name=name.strip(), stadium=stadium.strip())
         return self.current_league.add_team(team)
@@ -43,6 +90,7 @@ class LeagueManager:
                   new_stadium: Optional[str] = None) -> tuple[bool, str]:
         """
         A4: Edit team details.
+        A6: Validate team data before editing.
         
         Args:
             team_identifier: Team name or ID
@@ -61,6 +109,17 @@ class LeagueManager:
         
         if not team:
             return False, f"Team '{team_identifier}' not found"
+        
+        # A6: Validate new values if provided
+        if new_name:
+            is_valid, error_msg = self.validate_team_data(new_name, new_stadium or team.stadium)
+            if not is_valid:
+                return False, error_msg
+        
+        if new_stadium and not new_name:
+            is_valid, error_msg = self.validate_team_data(team.name, new_stadium)
+            if not is_valid:
+                return False, error_msg
         
         return self.current_league.edit_team(team.team_id, new_name, new_stadium)
     
@@ -96,4 +155,24 @@ class LeagueManager:
         
         except Exception as e:
             return False, f"Failed to save league: {str(e)}"
+        
+    def add_team(self, name: str, stadium: str) -> tuple[bool, str]:
+        """
+        A2: Add a team to the current league.
+        A3: Duplicate validation is handled in League.add_team()
+        A6: Validation rules applied in Team.validate()
+        
+        Args:
+            name: Team name
+            stadium: Stadium name
+        
+        Returns:
+            tuple: (success, message)
+        """
+        if not self.current_league:
+            return False, "No active league. Create a league first."
+        
+        team = Team(name=name.strip(), stadium=stadium.strip())
+        return self.current_league.add_team(team)
+    
     
