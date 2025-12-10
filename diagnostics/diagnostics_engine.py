@@ -699,8 +699,8 @@ class DiagnosticsEngine:
 
 
 
-    def predict_outcome_trends(self, league: League, window_size: int = 5,
-                              save_results: bool = True) -> List[TrendPrediction]:
+def predict_outcome_trends(self, league: League, window_size: int = 5,
+save_results: bool = True) -> List[TrendPrediction]:
 
         predictions: List[TrendPrediction] = []
         
@@ -817,3 +817,145 @@ class DiagnosticsEngine:
                 json.dump(result, f, indent=2)
         
         return predictions
+
+
+    def generate_season_summary(self, league: League, save_results: bool = True) -> Dict[str, Any]:
+
+        highlights: List[SeasonHighlight] = []
+        
+        played_matches = [m for m in league.matches if m.is_played]
+        
+        if not played_matches:
+            return {
+                "league_name": league.name,
+                "season": league.season,
+                "status": "no_matches_played",
+                "message": "No matches have been played yet"
+            }
+        
+        top_scoring_team = max(league.teams, key=lambda t: t.goals_for) if league.teams else None
+        if top_scoring_team:
+            highlights.append(SeasonHighlight(
+                category="top_scoring_team",
+                description="Highest scoring team",
+                value={"team": top_scoring_team.name, "goals": top_scoring_team.goals_for}
+            ))
+        
+        best_defense = min(league.teams, key=lambda t: t.goals_against) if league.teams else None
+        if best_defense:
+            highlights.append(SeasonHighlight(
+                category="best_defense",
+                description="Fewest goals conceded",
+                value={"team": best_defense.name, "goals_conceded": best_defense.goals_against}
+            ))
+        
+        most_wins = max(league.teams, key=lambda t: t.won) if league.teams else None
+        if most_wins:
+            highlights.append(SeasonHighlight(
+                category="most_wins",
+                description="Most victories",
+                value={"team": most_wins.name, "wins": most_wins.won}
+            ))
+        
+        biggest_win = None
+        max_margin = 0
+        for match in played_matches:
+            margin = abs(match.home_score - match.away_score)
+            if margin > max_margin:
+                max_margin = margin
+                biggest_win = match
+        
+        if biggest_win:
+            winner = biggest_win.home_team_name if biggest_win.home_score > biggest_win.away_score else biggest_win.away_team_name
+            highlights.append(SeasonHighlight(
+                category="biggest_win",
+                description="Largest victory margin",
+                value={
+                    "match": f"{biggest_win.home_team_name} {biggest_win.home_score}-{biggest_win.away_score} {biggest_win.away_team_name}",
+                    "margin": max_margin,
+                    "winner": winner
+                },
+                match_id=biggest_win.match_id
+            ))
+        
+        clean_sheets_count: Dict[str, int] = defaultdict(int)
+        for match in played_matches:
+            if match.away_score == 0:
+                clean_sheets_count[match.home_team_id] += 1
+            if match.home_score == 0:
+                clean_sheets_count[match.away_team_id] += 1
+        
+        if clean_sheets_count:
+            top_clean_sheet_team_id = max(clean_sheets_count, key=clean_sheets_count.get)
+            top_cs_team = league.get_team_by_id(top_clean_sheet_team_id)
+            if top_cs_team:
+                highlights.append(SeasonHighlight(
+                    category="most_clean_sheets",
+                    description="Most clean sheets",
+                    value={"team": top_cs_team.name, "clean_sheets": clean_sheets_count[top_clean_sheet_team_id]}
+                ))
+        
+        highest_scoring = max(played_matches, key=lambda m: m.home_score + m.away_score)
+        highlights.append(SeasonHighlight(
+            category="highest_scoring_match",
+            description="Most goals in a single match",
+            value={
+                "match": f"{highest_scoring.home_team_name} {highest_scoring.home_score}-{highest_scoring.away_score} {highest_scoring.away_team_name}",
+                "total_goals": highest_scoring.home_score + highest_scoring.away_score
+            },
+            match_id=highest_scoring.match_id
+        ))
+        
+        total_goals = sum(m.home_score + m.away_score for m in played_matches)
+        avg_goals_per_match = total_goals / len(played_matches) if played_matches else 0.0
+        
+        home_wins = len([m for m in played_matches if m.home_score > m.away_score])
+        away_wins = len([m for m in played_matches if m.away_score > m.home_score])
+        draws = len([m for m in played_matches if m.home_score == m.away_score])
+        
+        summary = {
+            "league_name": league.name,
+            "season": league.season,
+            "total_teams": len(league.teams),
+            "total_matches": len(league.matches),
+            "matches_played": len(played_matches),
+            "matches_remaining": len(league.matches) - len(played_matches),
+            "statistics": {
+                "total_goals": total_goals,
+                "average_goals_per_match": round(avg_goals_per_match, 2),
+                "home_wins": home_wins,
+                "away_wins": away_wins,
+                "draws": draws,
+                "home_win_percentage": round(home_wins / len(played_matches) * 100, 1) if played_matches else 0
+            },
+            "highlights": [
+                {
+                    "category": h.category,
+                    "description": h.description,
+                    "value": h.value,
+                    "match_id": h.match_id
+                } for h in highlights
+            ],
+            "top_teams": [
+                {
+                    "position": idx + 1,
+                    "team": team.name,
+                    "points": team.points,
+                    "wins": team.won,
+                    "draws": team.drawn,
+                    "losses": team.lost,
+                    "goals_for": team.goals_for,
+                    "goals_against": team.goals_against,
+                    "goal_difference": team.goal_difference
+                } for idx, team in enumerate(sorted(league.teams, key=lambda t: (-t.points, -t.goal_difference))[:5])
+            ],
+            "generated_at": datetime.now().isoformat()
+        }
+        
+        if save_results:
+            filepath = self.data_dir / f"season_summary_{league.name.replace(' ', '_')}_{league.season}.json"
+            with open(filepath, 'w') as f:
+                json.dump(summary, f, indent=2)
+        
+        return summary
+
