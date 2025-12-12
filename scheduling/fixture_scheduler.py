@@ -30,7 +30,7 @@ from src.scheduling.scheduler import generate_round_robin_pairs, balance_home_aw
 
 class FixtureScheduler:
     """
-    Fixture Scheduling Service (Member B - Abhishek).
+    Fixture Scheduling Service (Member B - Mahir).
     Handles fixture generation, validation, and rescheduling.
     """
     
@@ -192,3 +192,117 @@ class FixtureScheduler:
         total_weeks = (len(self.league.matches) // len(self.league.teams)) if self.league.teams else 0
         
         return True, f"All fixtures generated successfully: {total_matches} matches across {total_weeks} weeks"
+    
+    def reschedule_match(self, match_id: str, new_week: int) -> tuple[bool, str]:
+        """
+        B5: Reschedule a match to another week.
+        B4: Validates no clashes in the new week.
+        
+        Args:
+            match_id: ID of the match to reschedule
+            new_week: New week number
+        
+        Returns:
+            tuple: (success, message)
+        """
+        if not self.league:
+            return False, "No league set"
+        
+        # Find the match
+        match = next((m for m in self.league.matches if m.match_id == match_id), None)
+        if not match:
+            return False, f"Match '{match_id}' not found"
+        
+        if match.played:
+            return False, "Cannot reschedule a match that has been played"
+        
+        # B4: Check for clashes in new week
+        has_clash, clash_msg = self._check_week_clash(match.home_team_id, match.away_team_id, 
+                                                       new_week, exclude_match_id=match_id)
+        if has_clash:
+            return False, f"Clash detected: {clash_msg}"
+        
+        old_week = match.week
+        match.week = new_week
+        
+        return True, f"Match rescheduled from week {old_week} to week {new_week}"
+
+    def _check_week_clash(self, team1_id: str, team2_id: str, week: int, 
+                         exclude_match_id: Optional[str] = None) -> tuple[bool, str]:
+        """
+        B4: Check if teams already have matches in the given week.
+        
+        Returns:
+            tuple: (has_clash, message)
+        """
+        if not self.league:
+            return False, ""
+        
+        for match in self.league.matches:
+            if exclude_match_id and match.match_id == exclude_match_id:
+                continue
+            
+            if match.week != week:
+                continue
+            
+            if match.home_team_id == team1_id or match.away_team_id == team1_id:
+                return True, f"Team {team1_id} already has a match in week {week}"
+            
+            if match.home_team_id == team2_id or match.away_team_id == team2_id:
+                return True, f"Team {team2_id} already has a match in week {week}"
+        
+        return False, ""
+    
+    def validate_fixtures(self) -> tuple[bool, List[str]]:
+        """
+        B6: Validate fixture integrity - detect duplicates and invalid fixtures.
+        
+        Returns:
+            tuple: (is_valid, list_of_errors)
+        """
+        if not self.league:
+            return False, ["No league set"]
+        
+        errors = []
+        
+        # Check for duplicate matches
+        seen_pairs = set()
+        for match in self.league.matches:
+            # Create canonical pair (sorted team IDs)
+            pair = tuple(sorted([match.home_team_id, match.away_team_id]))
+            
+            if pair in seen_pairs:
+                errors.append(f"Duplicate match: {match.home_team_name} vs {match.away_team_name}")
+            else:
+                seen_pairs.add(pair)
+        
+        # Check for teams playing themselves
+        for match in self.league.matches:
+            if match.home_team_id == match.away_team_id:
+                errors.append(f"Invalid match: team playing itself in {match.match_id}")
+        
+        # Check for invalid team references
+        valid_team_ids = {team.team_id for team in self.league.teams}
+        for match in self.league.matches:
+            if match.home_team_id not in valid_team_ids:
+                errors.append(f"Invalid home team ID in {match.match_id}: {match.home_team_id}")
+            if match.away_team_id not in valid_team_ids:
+                errors.append(f"Invalid away team ID in {match.match_id}: {match.away_team_id}")
+        
+        # B4: Check for week clashes
+        week_teams = {}
+        for match in self.league.matches:
+            week = match.week
+            if week not in week_teams:
+                week_teams[week] = set()
+            
+            if match.home_team_id in week_teams[week]:
+                errors.append(f"Week clash: {match.home_team_name} plays multiple times in week {week}")
+            if match.away_team_id in week_teams[week]:
+                errors.append(f"Week clash: {match.away_team_name} plays multiple times in week {week}")
+            
+            week_teams[week].add(match.home_team_id)
+            week_teams[week].add(match.away_team_id)
+        
+        return len(errors) == 0, errors
+    
