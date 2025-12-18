@@ -187,3 +187,29 @@ class LeagueManager:
         
         else:
             return False, f"Unsupported format: {format_type}"
+    def validate_for_scheduling(self) -> tuple[bool, str]:
+       
+        if not self.current_league:
+            return False, "No active league"
+        
+        return self.current_league.validate_for_scheduling()
+    
+    def list_teams(self) -> list[dict]:
+       
+        if not self.current_league:
+            return []
+        
+        return [team.to_dict() for team in self.current_league.teams]
+    
+    def get_league_summary(self) -> dict:
+       
+        if not self.current_league:
+            return {}
+        
+        return {
+            "name": self.current_league.name,
+            "season": self.current_league.season,
+            "team_count": len(self.current_league.teams),
+            "fixtures_generated": self.current_league.fixtures_generated,
+            "total_matches": len(self.current_league.matches)
+        }
