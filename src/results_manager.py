@@ -177,4 +177,36 @@ class ResultsManager:
                 fixtures_by_week[match.week].append(match.to_dict())
         
         return dict(fixtures_by_week)
+    def export_standings(self, filepath: str, format_type: str = "csv") -> tuple[bool, str]:
+        
+        if not self.table:
+            return False, "No league table available"
+        
+        table_data = self.get_league_table()
+        
+        if not table_data:
+            return False, "League table is empty"
+        
+        try:
+            if format_type == "csv":
+                with open(filepath, 'w', newline='', encoding='utf-8') as f:
+                    fieldnames = ['position', 'team', 'played', 'won', 'drawn', 'lost',
+                                  'goals_for', 'goals_against', 'goal_difference', 'points']
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(table_data)
+                
+                return True, f"Standings exported to {filepath}"
+            
+            elif format_type == "txt":
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(self.display_table())
+                
+                return True, f"Standings exported to {filepath}"
+            
+            else:
+                return False, f"Unsupported format: {format_type}"
+        
+        except Exception as e:
+            return False, f"Export failed: {str(e)}"
     
