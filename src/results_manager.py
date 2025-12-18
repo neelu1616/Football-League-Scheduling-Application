@@ -8,7 +8,7 @@ from collections import defaultdict
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-# C2 UPDATE LEAGUE RESULTS
+
 
 
 from src.domain.league import League
