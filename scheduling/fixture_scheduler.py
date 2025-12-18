@@ -305,4 +305,41 @@ class FixtureScheduler:
             week_teams[week].add(match.away_team_id)
         
         return len(errors) == 0, errors
-    
+    def get_all_fixtures(self) -> List[dict]:
+        """
+        B7: View full fixture list.
+        
+        Returns:
+            List of fixture dictionaries
+        """
+        if not self.league:
+            return []
+        
+        return [match.to_dict() for match in sorted(self.league.matches, key=lambda m: (m.week, m.match_id))]
+    def get_team_fixtures(self, team_identifier: str) -> List[dict]:
+        """
+        B8: Get fixtures for a specific team.
+        
+        Args:
+            team_identifier: Team name or ID
+        
+        Returns:
+            List of fixture dictionaries for the team
+        """
+        if not self.league:
+            return []
+        
+        # Find team
+        team = self.league.get_team_by_name(team_identifier)
+        if not team:
+            team = self.league.get_team_by_id(team_identifier)
+        
+        if not team:
+            return []
+        
+        team_matches = [
+            match for match in self.league.matches
+            if match.home_team_id == team.team_id or match.away_team_id == team.team_id
+        ]
+        
+        return [match.to_dict() for match in sorted(team_matches, key=lambda m: m.week)]
