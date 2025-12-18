@@ -1295,4 +1295,161 @@ Generated on {datetime.now().isoformat()}
                 json.dump(results, f, indent=2)
         
         return results
+    
+    def extract_symbolic_paths(self, function_source: str, function_name: str,
+                              save_results: bool = True) -> Dict[str, Any]:
+        """
+        D9: Symbolic path discovery helper - extracts conditional branches from
+        a function for systematic path analysis.
+        
+        This is NOT symbolic execution itself - it's a helper tool that identifies
+        branches to guide manual symbolic/concolic testing.
+        
+        Args:
+            function_source: Source code of the function as string
+            function_name: Name of the function
+            save_results: Whether to save results
+        
+        Returns:
+            Dictionary with identified paths and conditions
+        """
+        try:
+            # Parse the function source code
+            tree = ast.parse(function_source)
+            
+            branches: List[Dict[str, Any]] = []
+            branch_id = 0
+            
+            # Visitor to extract conditional statements
+            class BranchVisitor(ast.NodeVisitor):
+                def __init__(self):
+                    self.branches = []
+                    self.branch_counter = 0
+                
+                def visit_If(self, node):
+                    self.branch_counter += 1
+                    condition = ast.unparse(node.test) if hasattr(ast, 'unparse') else "condition"
+                    
+                    self.branches.append({
+                        "branch_id": self.branch_counter,
+                        "type": "if_statement",
+                        "line": node.lineno,
+                        "condition": condition,
+                        "true_path": f"branch_{self.branch_counter}_true",
+                        "false_path": f"branch_{self.branch_counter}_false"
+                    })
+                    
+                    self.generic_visit(node)
+                
+                def visit_While(self, node):
+                    self.branch_counter += 1
+                    condition = ast.unparse(node.test) if hasattr(ast, 'unparse') else "condition"
+                    
+                    self.branches.append({
+                        "branch_id": self.branch_counter,
+                        "type": "while_loop",
+                        "line": node.lineno,
+                        "condition": condition,
+                        "continue_path": f"branch_{self.branch_counter}_continue",
+                        "exit_path": f"branch_{self.branch_counter}_exit"
+                    })
+                    
+                    self.generic_visit(node)
+                
+                def visit_For(self, node):
+                    self.branch_counter += 1
+                    
+                    self.branches.append({
+                        "branch_id": self.branch_counter,
+                        "type": "for_loop",
+                        "line": node.lineno,
+                        "iteration_path": f"branch_{self.branch_counter}_iterate",
+                        "exit_path": f"branch_{self.branch_counter}_exit"
+                    })
+                    
+                    self.generic_visit(node)
+            
+            visitor = BranchVisitor()
+            visitor.visit(tree)
+            branches = visitor.branches
+            
+            # Calculate cyclomatic complexity
+            # CC = E - N + 2P (E=edges, N=nodes, P=connected components)
+            # Approximation: CC = number of decision points + 1
+            cyclomatic_complexity = len(branches) + 1
+            
+            # Generate path combinations (simplified - for demonstration)
+            total_paths = 2 ** len([b for b in branches if b['type'] == 'if_statement'])
+            
+            result = {
+                "function_name": function_name,
+                "total_branches": len(branches),
+                "cyclomatic_complexity": cyclomatic_complexity,
+                "estimated_paths": total_paths,
+                "branches": branches,
+                "symbolic_variables": self._extract_variables(function_source),
+                "analysis_notes": [
+                    f"Found {len(branches)} decision points",
+                    f"Estimated {total_paths} unique execution paths",
+                    f"Cyclomatic complexity: {cyclomatic_complexity}",
+                    "Use this information to guide symbolic/concolic testing"
+                ],
+                "analyzed_at": datetime.now().isoformat()
+            }
+            
+            if save_results:
+                filepath = self.data_dir / f"symbolic_paths_{function_name}.json"
+                with open(filepath, 'w') as f:
+                    json.dump(result, f, indent=2)
+            
+            return result
+        
+        except Exception as e:
+            return {
+                "function_name": function_name,
+                "error": str(e),
+                "message": "Failed to parse function source"
+            }
+    
+    def _extract_variables(self, source_code: str) -> List[str]:
+        """Extract variable names from source code."""
+        try:
+            tree = ast.parse(source_code)
+            variables = set()
+            
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Name):
+                    variables.add(node.id)
+            
+            return sorted(list(variables))
+        except:
+            return []
+    
+    def get_diagnostics_summary(self) -> Dict[str, Any]:
+        """
+        Get summary of all diagnostics data generated.
+        
+        Returns:
+            Dictionary with summary information
+        """
+        summary = {
+            "diagnostics_directory": str(self.data_dir),
+            "available_reports": [],
+            "by_type": defaultdict(int),
+            "generated_at": datetime.now().isoformat()
+        }
+        
+        if self.data_dir.exists():
+            for file in self.data_dir.glob('*.json'):
+                summary["available_reports"].append(file.name)
+                
+                # Categorize by prefix
+                prefix = file.name.split('_')[0]
+                summary["by_type"][prefix] += 1
+            
+            summary["total_reports"] = len(summary["available_reports"])
+            summary["by_type"] = dict(summary["by_type"])
+        
+        return summary
+
 
