@@ -125,4 +125,65 @@ class LeagueManager:
         team = Team(name=name.strip(), stadium=stadium.strip())
         return self.current_league.add_team(team)
     
+    def load_league(self, filename: str) -> tuple[bool, str, Optional[League]]:
     
+        filepath = self.data_dir / filename
+        
+        if not filepath.exists():
+            return False, f"File not found: {filepath}", None
+        
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            self.current_league = League.from_dict(data)
+            
+            return True, f"League '{self.current_league.name}' loaded successfully", self.current_league
+        
+        except Exception as e:
+            return False, f"Failed to load league: {str(e)}", None
+        
+    def export_league(self, format_type: str = "json", filename: Optional[str] = None) -> tuple[bool, str]:
+        
+        if not self.current_league:
+            return False, "No active league to export"
+        
+        if format_type == "json":
+            return self.save_league(filename)
+        
+        elif format_type == "txt":
+            if not filename:
+                safe_name = self.current_league.name.lower().replace(" ", "_")
+                filename = f"{safe_name}_export.txt"
+            
+            filepath = self.data_dir / filename
+            
+            try:
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(f"=" * 60 + "\n")
+                    f.write(f"LEAGUE: {self.current_league.name}\n")
+                    f.write(f"SEASON: {self.current_league.season}\n")
+                    f.write(f"=" * 60 + "\n\n")
+                    
+                    f.write(f"TEAMS ({len(self.current_league.teams)}):\n")
+                    f.write("-" * 60 + "\n")
+                    
+                    for idx, team in enumerate(self.current_league.teams, 1):
+                        f.write(f"{idx}. {team.name}\n")
+                        f.write(f"   Stadium: {team.stadium}\n")
+                        f.write(f"   ID: {team.team_id}\n")
+                        if team.played > 0:
+                            f.write(f"   Record: {team.won}W-{team.drawn}D-{team.lost}L\n")
+                            f.write(f"   Points: {team.points}\n")
+                        f.write("\n")
+                    
+                    f.write("\n" + "=" * 60 + "\n")
+                    f.write(f"Exported: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                
+                return True, f"League exported to {filepath}"
+            
+            except Exception as e:
+                return False, f"Failed to export league: {str(e)}"
+        
+        else:
+            return False, f"Unsupported format: {format_type}"
