@@ -209,4 +209,105 @@ class ResultsManager:
         
         except Exception as e:
             return False, f"Export failed: {str(e)}"
+        
+        def get_head_to_head(self, team1_identifier: str, team2_identifier: str) -> dict:
+        
+          if not self.league:
+            return {}
+        
+        team1 = self.league.get_team_by_name(team1_identifier)
+        if not team1:
+            team1 = self.league.get_team_by_id(team1_identifier)
+        
+        team2 = self.league.get_team_by_name(team2_identifier)
+        if not team2:
+            team2 = self.league.get_team_by_id(team2_identifier)
+        
+        if not team1 or not team2:
+            return {}
+        
+        
+        h2h_matches = []
+        team1_wins = 0
+        team2_wins = 0
+        draws = 0
+        team1_goals = 0
+        team2_goals = 0
+        
+        for match in self.league.matches:
+            if not match.is_played:
+                continue
+            
+            is_h2h = False
+            team1_score = 0
+            team2_score = 0
+            
+            if match.home_team_id == team1.team_id and match.away_team_id == team2.team_id:
+                is_h2h = True
+                team1_score = match.home_score
+                team2_score = match.away_score
+            elif match.home_team_id == team2.team_id and match.away_team_id == team1.team_id:
+                is_h2h = True
+                team1_score = match.away_score
+                team2_score = match.home_score
+            
+            if is_h2h:
+                h2h_matches.append({
+                    "week": match.week,
+                    "home": match.home_team_name,
+                    "away": match.away_team_name,
+                    "score": f"{match.home_score}-{match.away_score}"
+                })
+                
+                team1_goals += team1_score
+                team2_goals += team2_score
+                
+                if team1_score > team2_score:
+                    team1_wins += 1
+                elif team2_score > team1_score:
+                    team2_wins += 1
+                else:
+                    draws += 1
+        
+        return {
+            "team1": team1.name,
+            "team2": team2.name,
+            "matches_played": len(h2h_matches),
+            "team1_wins": team1_wins,
+            "team2_wins": team2_wins,
+            "draws": draws,
+            "team1_goals": team1_goals,
+            "team2_goals": team2_goals,
+            "matches": h2h_matches
+        }
+    
+    def display_head_to_head(self, team1_identifier: str, team2_identifier: str) -> str:
+       
+        h2h = self.get_head_to_head(team1_identifier, team2_identifier)
+        
+        if not h2h:
+            return "No head-to-head data available"
+        
+        lines = []
+        lines.append("=" * 70)
+        lines.append(f"HEAD-TO-HEAD: {h2h['team1']} vs {h2h['team2']}")
+        lines.append("=" * 70)
+        lines.append(f"Matches Played: {h2h['matches_played']}")
+        lines.append("")
+        lines.append(f"{h2h['team1']} wins: {h2h['team1_wins']}")
+        lines.append(f"{h2h['team2']} wins: {h2h['team2_wins']}")
+        lines.append(f"Draws: {h2h['draws']}")
+        lines.append("")
+        lines.append(f"Goals: {h2h['team1']} {h2h['team1_goals']} - {h2h['team2_goals']} {h2h['team2']}")
+        lines.append("")
+        
+        if h2h['matches']:
+            lines.append("Match History:")
+            lines.append("-" * 70)
+            for match in h2h['matches']:
+                lines.append(f"Week {match['week']}: {match['home']} vs {match['away']} ({match['score']})")
+        
+        lines.append("=" * 70)
+        
+        return "\n".join(lines)
     
