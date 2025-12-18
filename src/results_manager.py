@@ -171,7 +171,9 @@ class ResultsManager:
         fixtures_by_week = defaultdict(list)
         
         for match in self.league.matches:
+          
             if week is None or match.week == week:
+               
                 fixtures_by_week[match.week].append(match.to_dict())
         
         return dict(fixtures_by_week)
