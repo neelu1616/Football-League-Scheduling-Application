@@ -554,7 +554,7 @@ class DiagnosticsEngine:
                     {
                         "weeks": f"{cz.week_start}-{cz.week_end}",
                         "affected_teams": [league.get_team_by_id(tid).name if league.get_team_by_id(tid) else tid 
-                                         for tid in cz.affected_teams],
+for tid in cz.affected_teams],
                         "match_density": cz.match_density,
                         "severity": cz.severity
                     } for cz in congestion_zones
@@ -569,144 +569,270 @@ class DiagnosticsEngine:
         return congestion_zones
     
 
-    def check_rule_compliance(self, league: League, min_rest_days: int = 3,
-                          min_weeks_between_same_opponent: int = 3,
-                          save_results: bool = True) -> List[RuleViolation]:
+    def check_rule_compliance(self, league: League, min_rest_days: int = 3,min_weeks_between_same_opponent: int = 3,save_results: bool = True) -> List[RuleViolation]:
+        """
+        D4: Pre-Match Rule Compliance Checker.
+        Validates scheduling rules including minimum rest periods, opponent spacing,
+        and home/away balance.
+        """
+        violations: List[RuleViolation] = []
 
-    violations: List[RuleViolation] = []
-    
-    for team in league.teams:
-        team_matches = sorted(
-            [m for m in league.matches if m.home_team_id == team.team_id or m.away_team_id == team.team_id],
-            key=lambda m: m.week
-        )
-        
-        for i in range(len(team_matches) - 1):
-            rest_weeks = team_matches[i+1].week - team_matches[i].week
-            rest_days = rest_weeks * 7
-            
-            if rest_days < min_rest_days:
-                violations.append(RuleViolation(
-                    rule_name="minimum_rest_period",
-                    severity="warning",
-                    description=f"Team '{team.name}' has only {rest_days} days rest between matches",
-                    affected_entities=[team.team_id, team_matches[i].match_id, team_matches[i+1].match_id],
-                    suggestion=f"Reschedule to ensure at least {min_rest_days} days between matches"
-                ))
-    
-    for team in league.teams:
-        team_matches = sorted(
-            [m for m in league.matches if m.home_team_id == team.team_id or m.away_team_id == team.team_id],
-            key=lambda m: m.week
-        )
-        
-        for i in range(len(team_matches) - 1):
-            current_opponent = (
-                team_matches[i].away_team_id 
-                if team_matches[i].home_team_id == team.team_id 
-                else team_matches[i].home_team_id
+        # Check 1: Minimum rest days between matches
+        for team in league.teams:
+            team_matches = sorted(
+                [m for m in league.matches if m.home_team_id == team.team_id or m.away_team_id == team.team_id],
+                key=lambda m: m.week
             )
-            next_opponent = (
-                team_matches[i+1].away_team_id 
-                if team_matches[i+1].home_team_id == team.team_id 
-                else team_matches[i+1].home_team_id
-            )
-            
-            if current_opponent == next_opponent:
-                weeks_apart = team_matches[i+1].week - team_matches[i].week
-                
-                if weeks_apart < min_weeks_between_same_opponent:
-                    opponent_team = league.get_team_by_id(current_opponent)
-                    opponent_name = opponent_team.name if opponent_team else current_opponent
-                    
+
+            for i in range(len(team_matches) - 1):
+                rest_weeks = team_matches[i+1].week - team_matches[i].week
+                rest_days = rest_weeks * 7
+
+                if rest_days < min_rest_days:
                     violations.append(RuleViolation(
-                        rule_name="repeated_opponent_spacing",
-                        severity="info",
-                        description=f"Team '{team.name}' plays '{opponent_name}' twice within {weeks_apart} weeks",
-                        affected_entities=[team.team_id, current_opponent, team_matches[i].match_id, team_matches[i+1].match_id],
-                        suggestion=f"Consider spacing fixtures against same opponent by at least {min_weeks_between_same_opponent} weeks"
+                        rule_name="minimum_rest_period",
+                        severity="warning",
+                        description=f"Team '{team.name}' has only {rest_days} days rest between matches",
+                        affected_entities=[team.team_id, team_matches[i].match_id, team_matches[i+1].match_id],
+                        suggestion=f"Reschedule to ensure at least {min_rest_days} days between matches"
                     ))
-    
-    max_consecutive_same_venue = 3
-    
-    for team in league.teams:
-        team_matches = sorted(
-            [m for m in league.matches if m.home_team_id == team.team_id or m.away_team_id == team.team_id],
-            key=lambda m: m.week
-        )
+
+        # Check 2: Spacing between matches against same opponent
+        for team in league.teams:
+            team_matches = sorted(
+                [m for m in league.matches if m.home_team_id == team.team_id or m.away_team_id == team.team_id],
+                key=lambda m: m.week
+            )
+
+            for i in range(len(team_matches) - 1):
+                current_opponent = (
+                    team_matches[i].away_team_id 
+                    if team_matches[i].home_team_id == team.team_id 
+                    else team_matches[i].home_team_id
+                )
+                next_opponent = (
+                    team_matches[i+1].away_team_id 
+                    if team_matches[i+1].home_team_id == team.team_id 
+                    else team_matches[i+1].home_team_id
+                )
+
+                if current_opponent == next_opponent:
+                    weeks_apart = team_matches[i+1].week - team_matches[i].week
+                    
+                    if weeks_apart < min_weeks_between_same_opponent:
+                        opponent_team = league.get_team_by_id(current_opponent)
+                        opponent_name = opponent_team.name if opponent_team else current_opponent
+                        
+                        violations.append(RuleViolation(
+                            rule_name="repeated_opponent_spacing",
+                            severity="info",
+                            description=f"Team '{team.name}' plays '{opponent_name}' twice within {weeks_apart} weeks",
+                            affected_entities=[team.team_id, current_opponent, team_matches[i].match_id, team_matches[i+1].match_id],
+                            suggestion=f"Consider spacing fixtures against same opponent by at least {min_weeks_between_same_opponent} weeks"
+                        ))
+
+        # Check 3: Consecutive home/away games
+        max_consecutive_same_venue = 3
+
+        for team in league.teams:
+            team_matches = sorted(
+                [m for m in league.matches if m.home_team_id == team.team_id or m.away_team_id == team.team_id],
+                key=lambda m: m.week
+            )
+
+            consecutive_home = 0
+            consecutive_away = 0
+
+            for match in team_matches:
+                if match.home_team_id == team.team_id:
+                    consecutive_home += 1
+                    consecutive_away = 0
+                else:
+                    consecutive_away += 1
+                    consecutive_home = 0
+
+                if consecutive_home > max_consecutive_same_venue:
+                    violations.append(RuleViolation(
+                        rule_name="max_consecutive_home_games",
+                        severity="warning",
+                        description=f"Team '{team.name}' has {consecutive_home} consecutive home games",
+                        affected_entities=[team.team_id, match.match_id],
+                        suggestion=f"Balance home/away distribution - max {max_consecutive_same_venue} consecutive games at same venue"
+                    ))
+
+                if consecutive_away > max_consecutive_same_venue:
+                    violations.append(RuleViolation(
+                        rule_name="max_consecutive_away_games",
+                        severity="warning",
+                        description=f"Team '{team.name}' has {consecutive_away} consecutive away games",
+                        affected_entities=[team.team_id, match.match_id],
+                        suggestion=f"Balance home/away distribution - max {max_consecutive_same_venue} consecutive games at same venue"
+                    ))
+
+        if save_results:
+            result = {
+                "league_name": league.name,
+                "season": league.season,
+                "rules_checked": {
+                    "min_rest_days": min_rest_days,
+                    "min_weeks_between_same_opponent": min_weeks_between_same_opponent,
+                    "max_consecutive_same_venue": max_consecutive_same_venue
+                },
+                "total_violations": len(violations),
+                "by_severity": {
+                    "critical": len([v for v in violations if v.severity == "critical"]),
+                    "warning": len([v for v in violations if v.severity == "warning"]),
+                    "info": len([v for v in violations if v.severity == "info"])
+                },
+                "violations": [
+                    {
+                        "rule": v.rule_name,
+                        "severity": v.severity,
+                        "description": v.description,
+                        "affected_entities": v.affected_entities,
+                        "suggestion": v.suggestion
+                    } for v in violations
+                ],
+                "checked_at": datetime.now().isoformat()
+            }
+
+            filepath = self.data_dir / f"compliance_{league.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            with open(filepath, 'w') as f:
+                json.dump(result, f, indent=2)
+
+        return violations
+
+    def predict_outcome_trends(self, league: League, window_size: int = 5,
+                               save_results: bool = True) -> List[TrendPrediction]:
+        """
+        D5: Predict outcome trends using basic statistical indicators.
+        Analyzes recent form and momentum to predict future performance.
+        """
+        predictions: List[TrendPrediction] = []
         
-        consecutive_home = 0
-        consecutive_away = 0
-        
-        for match in team_matches:
-            if match.home_team_id == team.team_id:
-                consecutive_home += 1
-                consecutive_away = 0
+        for team in league.teams:
+            team_matches = [m for m in league.matches 
+                           if (m.home_team_id == team.team_id or m.away_team_id == team.team_id)
+                           and m.is_played]
+            team_matches.sort(key=lambda m: m.week)
+            
+            if not team_matches:
+                predictions.append(TrendPrediction(
+                    team_id=team.team_id,
+                    team_name=team.name,
+                    current_form="unknown",
+                    win_probability=0.33,
+                    expected_points_next_5=0.0,
+                    momentum_score=0.0,
+                    trend_direction="stable"
+                ))
+                continue
+            
+            recent_matches = team_matches[-window_size:]
+            
+            wins = 0
+            draws = 0
+            losses = 0
+            goals_for = 0
+            goals_against = 0
+            
+            for match in recent_matches:
+                is_home = match.home_team_id == team.team_id
+                team_score = match.home_score if is_home else match.away_score
+                opponent_score = match.away_score if is_home else match.home_score
+                
+                goals_for += team_score
+                goals_against += opponent_score
+                
+                if team_score > opponent_score:
+                    wins += 1
+                elif team_score == opponent_score:
+                    draws += 1
+                else:
+                    losses += 1
+            
+            total_matches = len(recent_matches)
+            win_rate = wins / total_matches if total_matches > 0 else 0.0
+            points_per_game = (wins * 3 + draws) / total_matches if total_matches > 0 else 0.0
+            
+            if win_rate >= 0.7:
+                current_form = "excellent"
+            elif win_rate >= 0.5:
+                current_form = "good"
+            elif win_rate >= 0.3:
+                current_form = "average"
             else:
-                consecutive_away += 1
-                consecutive_home = 0
+                current_form = "poor"
             
-            if consecutive_home > max_consecutive_same_venue:
-                violations.append(RuleViolation(
-                    rule_name="max_consecutive_home_games",
-                    severity="warning",
-                    description=f"Team '{team.name}' has {consecutive_home} consecutive home games",
-                    affected_entities=[team.team_id, match.match_id],
-                    suggestion=f"Balance home/away distribution - max {max_consecutive_same_venue} consecutive games at same venue"
-                ))
+            momentum_score = 0.0
+            if len(recent_matches) >= 2:
+                mid_point = len(recent_matches) // 2
+                first_half = recent_matches[:mid_point]
+                second_half = recent_matches[mid_point:]
+                
+                first_half_ppg = sum(3 if (m.home_score > m.away_score if m.home_team_id == team.team_id else m.away_score > m.home_score) 
+                                    else (1 if m.home_score == m.away_score else 0) 
+                                    for m in first_half) / len(first_half) if first_half else 0
+                
+                second_half_ppg = sum(3 if (m.home_score > m.away_score if m.home_team_id == team.team_id else m.away_score > m.home_score)
+                                     else (1 if m.home_score == m.away_score else 0)
+                                     for m in second_half) / len(second_half) if second_half else 0
+                
+                momentum_score = second_half_ppg - first_half_ppg
             
-            if consecutive_away > max_consecutive_same_venue:
-                violations.append(RuleViolation(
-                    rule_name="max_consecutive_away_games",
-                    severity="warning",
-                    description=f"Team '{team.name}' has {consecutive_away} consecutive away games",
-                    affected_entities=[team.team_id, match.match_id],
-                    suggestion=f"Balance home/away distribution - max {max_consecutive_same_venue} consecutive games at same venue"
-                ))
-    
-    if save_results:
-        result = {
-            "league_name": league.name,
-            "season": league.season,
-            "rules_checked": {
-                "min_rest_days": min_rest_days,
-                "min_weeks_between_same_opponent": min_weeks_between_same_opponent,
-                "max_consecutive_same_venue": max_consecutive_same_venue
-            },
-            "total_violations": len(violations),
-            "by_severity": {
-                "critical": len([v for v in violations if v.severity == "critical"]),
-                "warning": len([v for v in violations if v.severity == "warning"]),
-                "info": len([v for v in violations if v.severity == "info"])
-            },
-            "violations": [
-                {
-                    "rule": v.rule_name,
-                    "severity": v.severity,
-                    "description": v.description,
-                    "affected_entities": v.affected_entities,
-                    "suggestion": v.suggestion
-                } for v in violations
-            ],
-            "checked_at": datetime.now().isoformat()
-        }
+            if momentum_score > 0.5:
+                trend_direction = "up"
+            elif momentum_score < -0.5:
+                trend_direction = "down"
+            else:
+                trend_direction = "stable"
+            
+            win_probability = min(0.9, max(0.1, win_rate * 1.2))
+            expected_points_next_5 = points_per_game * 5
+            
+            predictions.append(TrendPrediction(
+                team_id=team.team_id,
+                team_name=team.name,
+                current_form=current_form,
+                win_probability=round(win_probability, 3),
+                expected_points_next_5=round(expected_points_next_5, 1),
+                momentum_score=round(momentum_score, 3),
+                trend_direction=trend_direction
+            ))
         
-        filepath = self.data_dir / f"compliance_{league.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(filepath, 'w') as f:
-            json.dump(result, f, indent=2)
-    
-    return violations
+        if save_results:
+            result = {
+                "league_name": league.name,
+                "season": league.season,
+                "analysis_window": window_size,
+                "predictions": [
+                    {
+                        "team_name": p.team_name,
+                        "current_form": p.current_form,
+                        "win_probability": p.win_probability,
+                        "expected_points_next_5_matches": p.expected_points_next_5,
+                        "momentum_score": p.momentum_score,
+                        "trend": p.trend_direction
+                    } for p in predictions
+                ],
+                "predicted_at": datetime.now().isoformat()
+            }
+            
+            filepath = self.data_dir / f"trends_{league.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            with open(filepath, 'w') as f:
+                json.dump(result, f, indent=2)
+        
+        return predictions
 
 
-
-def predict_outcome_trends(self, league: League, window_size: int = 5,
-save_results: bool = True) -> List[TrendPrediction]:
+    def predict_outcome_trends(self, league: League, window_size: int = 5,
+                                    save_results: bool = True) -> List[TrendPrediction]:
 
         predictions: List[TrendPrediction] = []
         
         for team in league.teams:
             team_matches = [m for m in league.matches 
-                          if (m.home_team_id == team.team_id or m.away_team_id == team.team_id)
+            if (m.home_team_id == team.team_id or m.away_team_id == team.team_id)
                           and m.is_played]
             team_matches.sort(key=lambda m: m.week)
             
@@ -958,4 +1084,144 @@ save_results: bool = True) -> List[TrendPrediction]:
                 json.dump(summary, f, indent=2)
         
         return summary
+    
+
+    def generate_test_data(self, function_name: str, parameter_types: Dict[str, str],
+                          save_to_file: bool = True) -> Dict[str, List[Any]]:
+        
+        test_cases: Dict[str, List[Any]] = {
+            "boundary_values": [],
+            "equivalence_partitions": [],
+            "edge_cases": []
+        }
+        
+        for param_name, param_type in parameter_types.items():
+            if param_type == "int":
+                # Boundary values for integers
+                test_cases["boundary_values"].extend([
+                    {param_name: 0, "category": "zero"},
+                    {param_name: 1, "category": "minimum_positive"},
+                    {param_name: -1, "category": "minimum_negative"},
+                    {param_name: 100, "category": "large_positive"},
+                    {param_name: -100, "category": "large_negative"}
+                ])
+                
+                # Equivalence partitions
+                test_cases["equivalence_partitions"].extend([
+                    {param_name: 50, "partition": "positive_numbers"},
+                    {param_name: -50, "partition": "negative_numbers"},
+                    {param_name: 0, "partition": "zero"}
+                ])
+            
+            elif param_type == "string":
+                # Boundary values for strings
+                test_cases["boundary_values"].extend([
+                    {param_name: "", "category": "empty_string"},
+                    {param_name: "a", "category": "single_char"},
+                    {param_name: "a" * 100, "category": "long_string"},
+                    {param_name: "test string", "category": "normal_string"}
+                ])
+                
+                # Equivalence partitions
+                test_cases["equivalence_partitions"].extend([
+                    {param_name: "ValidString", "partition": "valid_strings"},
+                    {param_name: "123", "partition": "numeric_strings"},
+                    {param_name: "Special@#$", "partition": "special_chars"}
+                ])
+            
+            elif param_type == "list":
+                # Boundary values for lists
+                test_cases["boundary_values"].extend([
+                    {param_name: [], "category": "empty_list"},
+                    {param_name: [1], "category": "single_element"},
+                    {param_name: list(range(100)), "category": "large_list"}
+                ])
+                
+                # Equivalence partitions
+                test_cases["equivalence_partitions"].extend([
+                    {param_name: [1, 2, 3], "partition": "small_list"},
+                    {param_name: list(range(10)), "partition": "medium_list"}
+                ])
+            
+            elif param_type == "bool":
+                # Boolean values
+                test_cases["boundary_values"].extend([
+                    {param_name: True, "category": "true"},
+                    {param_name: False, "category": "false"}
+                ])
+            
+            # Edge cases
+            test_cases["edge_cases"].extend([
+                {param_name: None, "case": "null_value"},
+            ])
+        
+        # Generate random test cases
+        random.seed(42)
+        random_cases = []
+        for _ in range(10):
+            case = {}
+            for param_name, param_type in parameter_types.items():
+                if param_type == "int":
+                    case[param_name] = random.randint(-1000, 1000)
+                elif param_type == "string":
+                    case[param_name] = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=random.randint(1, 20)))
+                elif param_type == "list":
+                    case[param_name] = [random.randint(0, 100) for _ in range(random.randint(0, 10))]
+                elif param_type == "bool":
+                    case[param_name] = random.choice([True, False])
+            random_cases.append(case)
+        
+        test_data = {
+            "function_name": function_name,
+            "parameters": parameter_types,
+            "test_cases": test_cases,
+            "random_test_cases": random_cases,
+            "total_generated": sum(len(v) for v in test_cases.values()) + len(random_cases),
+            "generated_at": datetime.now().isoformat()
+        }
+        
+        if save_to_file:
+            # Save to tests folder
+            tests_dir = Path(__file__).parent.parent / "tests" / "generated"
+            tests_dir.mkdir(parents=True, exist_ok=True)
+            
+            filepath = tests_dir / f"test_data_{function_name}.json"
+            with open(filepath, 'w') as f:
+                json.dump(test_data, f, indent=2)
+            
+            # Also create a Python test file template
+            test_file_content = f'''"""
+Auto-generated test cases for {function_name}
+Generated on {datetime.now().isoformat()}
+
+
+{function_name}
+
+{function_name.title().replace("_", "")}:
+    """Test suite for {function_name}"""
+    
+    # Boundary value tests
+'''
+            for idx, case in enumerate(test_cases["boundary_values"][:5]):  # Limit to first 5
+                test_file_content += f'''
+    def test_boundary_{idx}(self):
+        """Test boundary case: {case.get('category', 'unknown')}"""
+        # TODO: Implement test
+        pass
+'''
+            
+            test_file_content += "\n    # Equivalence partition tests\n"
+            for idx, case in enumerate(test_cases["equivalence_partitions"][:5]):
+                test_file_content += f'''
+    def test_partition_{idx}(self):
+        """Test partition: {case.get('partition', 'unknown')}"""
+        # TODO: Implement test
+        pass
+'''
+            
+            test_filepath = tests_dir / f"test_{function_name}.py"
+            with open(test_filepath, 'w') as f:
+                f.write(test_file_content)
+        
+        return test_data
 
