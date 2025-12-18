@@ -567,3 +567,395 @@ class DiagnosticsEngine:
                 json.dump(result, f, indent=2)
         
         return congestion_zones
+    
+
+    def check_rule_compliance(self, league: League, min_rest_days: int = 3,
+                          min_weeks_between_same_opponent: int = 3,
+                          save_results: bool = True) -> List[RuleViolation]:
+
+    violations: List[RuleViolation] = []
+    
+    for team in league.teams:
+        team_matches = sorted(
+            [m for m in league.matches if m.home_team_id == team.team_id or m.away_team_id == team.team_id],
+            key=lambda m: m.week
+        )
+        
+        for i in range(len(team_matches) - 1):
+            rest_weeks = team_matches[i+1].week - team_matches[i].week
+            rest_days = rest_weeks * 7
+            
+            if rest_days < min_rest_days:
+                violations.append(RuleViolation(
+                    rule_name="minimum_rest_period",
+                    severity="warning",
+                    description=f"Team '{team.name}' has only {rest_days} days rest between matches",
+                    affected_entities=[team.team_id, team_matches[i].match_id, team_matches[i+1].match_id],
+                    suggestion=f"Reschedule to ensure at least {min_rest_days} days between matches"
+                ))
+    
+    for team in league.teams:
+        team_matches = sorted(
+            [m for m in league.matches if m.home_team_id == team.team_id or m.away_team_id == team.team_id],
+            key=lambda m: m.week
+        )
+        
+        for i in range(len(team_matches) - 1):
+            current_opponent = (
+                team_matches[i].away_team_id 
+                if team_matches[i].home_team_id == team.team_id 
+                else team_matches[i].home_team_id
+            )
+            next_opponent = (
+                team_matches[i+1].away_team_id 
+                if team_matches[i+1].home_team_id == team.team_id 
+                else team_matches[i+1].home_team_id
+            )
+            
+            if current_opponent == next_opponent:
+                weeks_apart = team_matches[i+1].week - team_matches[i].week
+                
+                if weeks_apart < min_weeks_between_same_opponent:
+                    opponent_team = league.get_team_by_id(current_opponent)
+                    opponent_name = opponent_team.name if opponent_team else current_opponent
+                    
+                    violations.append(RuleViolation(
+                        rule_name="repeated_opponent_spacing",
+                        severity="info",
+                        description=f"Team '{team.name}' plays '{opponent_name}' twice within {weeks_apart} weeks",
+                        affected_entities=[team.team_id, current_opponent, team_matches[i].match_id, team_matches[i+1].match_id],
+                        suggestion=f"Consider spacing fixtures against same opponent by at least {min_weeks_between_same_opponent} weeks"
+                    ))
+    
+    max_consecutive_same_venue = 3
+    
+    for team in league.teams:
+        team_matches = sorted(
+            [m for m in league.matches if m.home_team_id == team.team_id or m.away_team_id == team.team_id],
+            key=lambda m: m.week
+        )
+        
+        consecutive_home = 0
+        consecutive_away = 0
+        
+        for match in team_matches:
+            if match.home_team_id == team.team_id:
+                consecutive_home += 1
+                consecutive_away = 0
+            else:
+                consecutive_away += 1
+                consecutive_home = 0
+            
+            if consecutive_home > max_consecutive_same_venue:
+                violations.append(RuleViolation(
+                    rule_name="max_consecutive_home_games",
+                    severity="warning",
+                    description=f"Team '{team.name}' has {consecutive_home} consecutive home games",
+                    affected_entities=[team.team_id, match.match_id],
+                    suggestion=f"Balance home/away distribution - max {max_consecutive_same_venue} consecutive games at same venue"
+                ))
+            
+            if consecutive_away > max_consecutive_same_venue:
+                violations.append(RuleViolation(
+                    rule_name="max_consecutive_away_games",
+                    severity="warning",
+                    description=f"Team '{team.name}' has {consecutive_away} consecutive away games",
+                    affected_entities=[team.team_id, match.match_id],
+                    suggestion=f"Balance home/away distribution - max {max_consecutive_same_venue} consecutive games at same venue"
+                ))
+    
+    if save_results:
+        result = {
+            "league_name": league.name,
+            "season": league.season,
+            "rules_checked": {
+                "min_rest_days": min_rest_days,
+                "min_weeks_between_same_opponent": min_weeks_between_same_opponent,
+                "max_consecutive_same_venue": max_consecutive_same_venue
+            },
+            "total_violations": len(violations),
+            "by_severity": {
+                "critical": len([v for v in violations if v.severity == "critical"]),
+                "warning": len([v for v in violations if v.severity == "warning"]),
+                "info": len([v for v in violations if v.severity == "info"])
+            },
+            "violations": [
+                {
+                    "rule": v.rule_name,
+                    "severity": v.severity,
+                    "description": v.description,
+                    "affected_entities": v.affected_entities,
+                    "suggestion": v.suggestion
+                } for v in violations
+            ],
+            "checked_at": datetime.now().isoformat()
+        }
+        
+        filepath = self.data_dir / f"compliance_{league.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(filepath, 'w') as f:
+            json.dump(result, f, indent=2)
+    
+    return violations
+
+
+
+def predict_outcome_trends(self, league: League, window_size: int = 5,
+save_results: bool = True) -> List[TrendPrediction]:
+
+        predictions: List[TrendPrediction] = []
+        
+        for team in league.teams:
+            team_matches = [m for m in league.matches 
+                          if (m.home_team_id == team.team_id or m.away_team_id == team.team_id)
+                          and m.is_played]
+            team_matches.sort(key=lambda m: m.week)
+            
+            if not team_matches:
+                predictions.append(TrendPrediction(
+                    team_id=team.team_id,
+                    team_name=team.name,
+                    current_form="unknown",
+                    win_probability=0.33,
+                    expected_points_next_5=0.0,
+                    momentum_score=0.0,
+                    trend_direction="stable"
+                ))
+                continue
+            
+            recent_matches = team_matches[-window_size:]
+            
+            wins = 0
+            draws = 0
+            losses = 0
+            goals_for = 0
+            goals_against = 0
+            
+            for match in recent_matches:
+                is_home = match.home_team_id == team.team_id
+                team_score = match.home_score if is_home else match.away_score
+                opponent_score = match.away_score if is_home else match.home_score
+                
+                goals_for += team_score
+                goals_against += opponent_score
+                
+                if team_score > opponent_score:
+                    wins += 1
+                elif team_score == opponent_score:
+                    draws += 1
+                else:
+                    losses += 1
+            
+            total_matches = len(recent_matches)
+            win_rate = wins / total_matches if total_matches > 0 else 0.0
+            points_per_game = (wins * 3 + draws) / total_matches if total_matches > 0 else 0.0
+            
+            if win_rate >= 0.7:
+                current_form = "excellent"
+            elif win_rate >= 0.5:
+                current_form = "good"
+            elif win_rate >= 0.3:
+                current_form = "average"
+            else:
+                current_form = "poor"
+            
+            momentum_score = 0.0
+            if len(recent_matches) >= 2:
+                mid_point = len(recent_matches) // 2
+                first_half = recent_matches[:mid_point]
+                second_half = recent_matches[mid_point:]
+                
+                first_half_ppg = sum(3 if (m.home_score > m.away_score if m.home_team_id == team.team_id else m.away_score > m.home_score) 
+                                    else (1 if m.home_score == m.away_score else 0) 
+                                    for m in first_half) / len(first_half) if first_half else 0
+                
+                second_half_ppg = sum(3 if (m.home_score > m.away_score if m.home_team_id == team.team_id else m.away_score > m.home_score)
+                                     else (1 if m.home_score == m.away_score else 0)
+                                     for m in second_half) / len(second_half) if second_half else 0
+                
+                momentum_score = second_half_ppg - first_half_ppg
+            
+            if momentum_score > 0.5:
+                trend_direction = "up"
+            elif momentum_score < -0.5:
+                trend_direction = "down"
+            else:
+                trend_direction = "stable"
+            
+            win_probability = min(0.9, max(0.1, win_rate * 1.2))
+            expected_points_next_5 = points_per_game * 5
+            
+            predictions.append(TrendPrediction(
+                team_id=team.team_id,
+                team_name=team.name,
+                current_form=current_form,
+                win_probability=round(win_probability, 3),
+                expected_points_next_5=round(expected_points_next_5, 1),
+                momentum_score=round(momentum_score, 3),
+                trend_direction=trend_direction
+            ))
+        
+        if save_results:
+            result = {
+                "league_name": league.name,
+                "season": league.season,
+                "analysis_window": window_size,
+                "predictions": [
+                    {
+                        "team_name": p.team_name,
+                        "current_form": p.current_form,
+                        "win_probability": p.win_probability,
+                        "expected_points_next_5_matches": p.expected_points_next_5,
+                        "momentum_score": p.momentum_score,
+                        "trend": p.trend_direction
+                    } for p in predictions
+                ],
+                "predicted_at": datetime.now().isoformat()
+            }
+            
+            filepath = self.data_dir / f"trends_{league.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            with open(filepath, 'w') as f:
+                json.dump(result, f, indent=2)
+        
+        return predictions
+
+
+    def generate_season_summary(self, league: League, save_results: bool = True) -> Dict[str, Any]:
+
+        highlights: List[SeasonHighlight] = []
+        
+        played_matches = [m for m in league.matches if m.is_played]
+        
+        if not played_matches:
+            return {
+                "league_name": league.name,
+                "season": league.season,
+                "status": "no_matches_played",
+                "message": "No matches have been played yet"
+            }
+        
+        top_scoring_team = max(league.teams, key=lambda t: t.goals_for) if league.teams else None
+        if top_scoring_team:
+            highlights.append(SeasonHighlight(
+                category="top_scoring_team",
+                description="Highest scoring team",
+                value={"team": top_scoring_team.name, "goals": top_scoring_team.goals_for}
+            ))
+        
+        best_defense = min(league.teams, key=lambda t: t.goals_against) if league.teams else None
+        if best_defense:
+            highlights.append(SeasonHighlight(
+                category="best_defense",
+                description="Fewest goals conceded",
+                value={"team": best_defense.name, "goals_conceded": best_defense.goals_against}
+            ))
+        
+        most_wins = max(league.teams, key=lambda t: t.won) if league.teams else None
+        if most_wins:
+            highlights.append(SeasonHighlight(
+                category="most_wins",
+                description="Most victories",
+                value={"team": most_wins.name, "wins": most_wins.won}
+            ))
+        
+        biggest_win = None
+        max_margin = 0
+        for match in played_matches:
+            margin = abs(match.home_score - match.away_score)
+            if margin > max_margin:
+                max_margin = margin
+                biggest_win = match
+        
+        if biggest_win:
+            winner = biggest_win.home_team_name if biggest_win.home_score > biggest_win.away_score else biggest_win.away_team_name
+            highlights.append(SeasonHighlight(
+                category="biggest_win",
+                description="Largest victory margin",
+                value={
+                    "match": f"{biggest_win.home_team_name} {biggest_win.home_score}-{biggest_win.away_score} {biggest_win.away_team_name}",
+                    "margin": max_margin,
+                    "winner": winner
+                },
+                match_id=biggest_win.match_id
+            ))
+        
+        clean_sheets_count: Dict[str, int] = defaultdict(int)
+        for match in played_matches:
+            if match.away_score == 0:
+                clean_sheets_count[match.home_team_id] += 1
+            if match.home_score == 0:
+                clean_sheets_count[match.away_team_id] += 1
+        
+        if clean_sheets_count:
+            top_clean_sheet_team_id = max(clean_sheets_count, key=clean_sheets_count.get)
+            top_cs_team = league.get_team_by_id(top_clean_sheet_team_id)
+            if top_cs_team:
+                highlights.append(SeasonHighlight(
+                    category="most_clean_sheets",
+                    description="Most clean sheets",
+                    value={"team": top_cs_team.name, "clean_sheets": clean_sheets_count[top_clean_sheet_team_id]}
+                ))
+        
+        highest_scoring = max(played_matches, key=lambda m: m.home_score + m.away_score)
+        highlights.append(SeasonHighlight(
+            category="highest_scoring_match",
+            description="Most goals in a single match",
+            value={
+                "match": f"{highest_scoring.home_team_name} {highest_scoring.home_score}-{highest_scoring.away_score} {highest_scoring.away_team_name}",
+                "total_goals": highest_scoring.home_score + highest_scoring.away_score
+            },
+            match_id=highest_scoring.match_id
+        ))
+        
+        total_goals = sum(m.home_score + m.away_score for m in played_matches)
+        avg_goals_per_match = total_goals / len(played_matches) if played_matches else 0.0
+        
+        home_wins = len([m for m in played_matches if m.home_score > m.away_score])
+        away_wins = len([m for m in played_matches if m.away_score > m.home_score])
+        draws = len([m for m in played_matches if m.home_score == m.away_score])
+        
+        summary = {
+            "league_name": league.name,
+            "season": league.season,
+            "total_teams": len(league.teams),
+            "total_matches": len(league.matches),
+            "matches_played": len(played_matches),
+            "matches_remaining": len(league.matches) - len(played_matches),
+            "statistics": {
+                "total_goals": total_goals,
+                "average_goals_per_match": round(avg_goals_per_match, 2),
+                "home_wins": home_wins,
+                "away_wins": away_wins,
+                "draws": draws,
+                "home_win_percentage": round(home_wins / len(played_matches) * 100, 1) if played_matches else 0
+            },
+            "highlights": [
+                {
+                    "category": h.category,
+                    "description": h.description,
+                    "value": h.value,
+                    "match_id": h.match_id
+                } for h in highlights
+            ],
+            "top_teams": [
+                {
+                    "position": idx + 1,
+                    "team": team.name,
+                    "points": team.points,
+                    "wins": team.won,
+                    "draws": team.drawn,
+                    "losses": team.lost,
+                    "goals_for": team.goals_for,
+                    "goals_against": team.goals_against,
+                    "goal_difference": team.goal_difference
+                } for idx, team in enumerate(sorted(league.teams, key=lambda t: (-t.points, -t.goal_difference))[:5])
+            ],
+            "generated_at": datetime.now().isoformat()
+        }
+        
+        if save_results:
+            filepath = self.data_dir / f"season_summary_{league.name.replace(' ', '_')}_{league.season}.json"
+            with open(filepath, 'w') as f:
+                json.dump(summary, f, indent=2)
+        
+        return summary
+
