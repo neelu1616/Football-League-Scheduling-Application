@@ -13,7 +13,7 @@ Implements user stories B1-B9:
 - B9: Auto-Regenerate Fixtures After Team Changes
 """
 
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime, timedelta
 
 import sys
@@ -305,4 +305,109 @@ class FixtureScheduler:
             week_teams[week].add(match.away_team_id)
         
         return len(errors) == 0, errors
+    def get_all_fixtures(self) -> List[dict]:
+        """
+        B7: View full fixture list.
+        
+        Returns:
+            List of fixture dictionaries
+        """
+        if not self.league:
+            return []
+        
+        return [match.to_dict() for match in sorted(self.league.matches, key=lambda m: (m.week, m.match_id))]
+    def get_team_fixtures(self, team_identifier: str) -> List[dict]:
+        """
+        B8: Get fixtures for a specific team.
+        
+        Args:
+            team_identifier: Team name or ID
+        
+        Returns:
+            List of fixture dictionaries for the team
+        """
+        if not self.league:
+            return []
+        
+        # Find team
+        team = self.league.get_team_by_name(team_identifier)
+        if not team:
+            team = self.league.get_team_by_id(team_identifier)
+        
+        if not team:
+            return []
+        
+        team_matches = [
+            match for match in self.league.matches
+            if match.home_team_id == team.team_id or match.away_team_id == team.team_id
+        ]
+        
+        return [match.to_dict() for match in sorted(team_matches, key=lambda m: m.week)]
+    def auto_regenerate_fixtures(self, start_date: Optional[str] = None) -> tuple[bool, str]:
+        """
+        B9: Automatically regenerate fixtures after team changes.
+        
+        This is called when teams are added/removed/edited to ensure
+        the schedule stays consistent with league structure.
+        
+        Args:
+            start_date: Starting date for fixtures (optional)
+        
+        Returns:
+            tuple: (success, message)
+        """
+        if not self.league:
+            return False, "No league set"
+        
+        # Validate league first (uses A9 validation)
+        is_valid, error_msg = self.league.validate_for_scheduling()
+        if not is_valid:
+            return False, f"Cannot regenerate fixtures: {error_msg}"
+        
+        # Save any existing match results before regenerating
+        results_backup = {}
+        for match in self.league.matches:
+            if match.is_played:
+                # Store results by team pair
+                pair = tuple(sorted([match.home_team_id, match.away_team_id]))
+                results_backup[pair] = (match.home_score, match.away_score, match.home_team_id)
+        
+        # Regenerate fixtures
+        success, msg = self.generate_fixtures(start_date)
+        
+        if success and results_backup:
+            # Restore results
+            restored = 0
+            for match in self.league.matches:
+                pair = tuple(sorted([match.home_team_id, match.away_team_id]))
+                if pair in results_backup:
+                    home_score, away_score, original_home_id = results_backup[pair]
+                    
+                    # Check if home/away switched
+                    if match.home_team_id == original_home_id:
+                        match.record_result(home_score, away_score)
+                    else:
+                        match.record_result(away_score, home_score)
+                    
+                    restored += 1
+            
+            if restored > 0:
+                msg += f" (Restored {restored} match results)"
+        
+        return success, msg
     
+    def get_fixtures_by_week(self, week: int) -> List[dict]:
+        """
+        Helper: Get all fixtures for a specific week.
+        
+        Args:
+            week: Week number
+        
+        Returns:
+            List of fixture dictionaries
+        """
+        if not self.league:
+            return []
+        
+        week_matches = [match for match in self.league.matches if match.week == week]
+        return [match.to_dict() for match in week_matches]

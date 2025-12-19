@@ -14,7 +14,6 @@ from src.domain.team import Team
 
 class LeagueManager:
     
-    # Validation constants for A6
     MIN_TEAM_NAME_LENGTH = 2
     MAX_TEAM_NAME_LENGTH = 50
     MIN_STADIUM_NAME_LENGTH = 2
@@ -38,24 +37,15 @@ class LeagueManager:
         return True, f"League '{name}' created for season {season}", self.current_league
     
     def validate_team_data(self, name: str, stadium: str) -> tuple[bool, str]:
-        """
-        A6: Validate team data according to business rules.
-        
-        Args:
-            name: Team name
-            stadium: Stadium name
-        
-        Returns:
-            tuple: (is_valid, error_message)
-        """
-        # Validate team name
+       
+       
         if not name or len(name.strip()) < self.MIN_TEAM_NAME_LENGTH:
             return False, f"Team name must be at least {self.MIN_TEAM_NAME_LENGTH} characters"
         
         if len(name.strip()) > self.MAX_TEAM_NAME_LENGTH:
             return False, f"Team name must not exceed {self.MAX_TEAM_NAME_LENGTH} characters"
         
-        # Validate stadium name
+       
         if not stadium or len(stadium.strip()) < self.MIN_STADIUM_NAME_LENGTH:
             return False, f"Stadium name must be at least {self.MIN_STADIUM_NAME_LENGTH} characters"
         
@@ -65,21 +55,11 @@ class LeagueManager:
         return True, ""
     
     def add_team(self, name: str, stadium: str) -> tuple[bool, str]:
-        """
-        A2: Add a team to the current league.
-        A6: Validate team data before adding.
-        
-        Args:
-            name: Team name
-            stadium: Stadium name
-        
-        Returns:
-            tuple: (success, message)
-        """
+       
         if not self.current_league:
             return False, "No active league. Create a league first."
         
-        # A6: Validate team data
+       
         is_valid, error_msg = self.validate_team_data(name, stadium)
         if not is_valid:
             return False, error_msg
@@ -88,18 +68,7 @@ class LeagueManager:
         return self.current_league.add_team(team)
     def edit_team(self, team_identifier: str, new_name: Optional[str] = None, 
                   new_stadium: Optional[str] = None) -> tuple[bool, str]:
-        """
-        A4: Edit team details.
-        A6: Validate team data before editing.
         
-        Args:
-            team_identifier: Team name or ID
-            new_name: New team name (optional)
-            new_stadium: New stadium name (optional)
-        
-        Returns:
-            tuple: (success, message)
-        """
         if not self.current_league:
             return False, "No active league"
         
@@ -110,7 +79,7 @@ class LeagueManager:
         if not team:
             return False, f"Team '{team_identifier}' not found"
         
-        # A6: Validate new values if provided
+       
         if new_name:
             is_valid, error_msg = self.validate_team_data(new_name, new_stadium or team.stadium)
             if not is_valid:
@@ -124,20 +93,12 @@ class LeagueManager:
         return self.current_league.edit_team(team.team_id, new_name, new_stadium)
     
     def save_league(self, filename: Optional[str] = None) -> tuple[bool, str]:
-        """
-        A5: Persist league and team data to JSON file.
         
-        Args:
-            filename: Custom filename (optional, auto-generated if not provided)
-        
-        Returns:
-            tuple: (success, message)
-        """
         if not self.current_league:
             return False, "No active league to save"
         
         if not filename:
-            # Auto-generate filename from league name and season
+           
             safe_name = self.current_league.name.lower().replace(" ", "_")
             safe_season = self.current_league.season.replace("/", "-")
             filename = f"{safe_name}_{safe_season}.json"
@@ -157,22 +118,98 @@ class LeagueManager:
             return False, f"Failed to save league: {str(e)}"
         
     def add_team(self, name: str, stadium: str) -> tuple[bool, str]:
-        """
-        A2: Add a team to the current league.
-        A3: Duplicate validation is handled in League.add_team()
-        A6: Validation rules applied in Team.validate()
         
-        Args:
-            name: Team name
-            stadium: Stadium name
-        
-        Returns:
-            tuple: (success, message)
-        """
         if not self.current_league:
             return False, "No active league. Create a league first."
         
         team = Team(name=name.strip(), stadium=stadium.strip())
         return self.current_league.add_team(team)
     
+    def load_league(self, filename: str) -> tuple[bool, str, Optional[League]]:
     
+        filepath = self.data_dir / filename
+        
+        if not filepath.exists():
+            return False, f"File not found: {filepath}", None
+        
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            self.current_league = League.from_dict(data)
+            
+            return True, f"League '{self.current_league.name}' loaded successfully", self.current_league
+        
+        except Exception as e:
+            return False, f"Failed to load league: {str(e)}", None
+        
+    def export_league(self, format_type: str = "json", filename: Optional[str] = None) -> tuple[bool, str]:
+        
+        if not self.current_league:
+            return False, "No active league to export"
+        
+        if format_type == "json":
+            return self.save_league(filename)
+        
+        elif format_type == "txt":
+            if not filename:
+                safe_name = self.current_league.name.lower().replace(" ", "_")
+                filename = f"{safe_name}_export.txt"
+            
+            filepath = self.data_dir / filename
+            
+            try:
+                with open(filepath, 'w', encoding='utf-8') as f:
+                    f.write(f"=" * 60 + "\n")
+                    f.write(f"LEAGUE: {self.current_league.name}\n")
+                    f.write(f"SEASON: {self.current_league.season}\n")
+                    f.write(f"=" * 60 + "\n\n")
+                    
+                    f.write(f"TEAMS ({len(self.current_league.teams)}):\n")
+                    f.write("-" * 60 + "\n")
+                    
+                    for idx, team in enumerate(self.current_league.teams, 1):
+                        f.write(f"{idx}. {team.name}\n")
+                        f.write(f"   Stadium: {team.stadium}\n")
+                        f.write(f"   ID: {team.team_id}\n")
+                        if team.played > 0:
+                            f.write(f"   Record: {team.won}W-{team.drawn}D-{team.lost}L\n")
+                            f.write(f"   Points: {team.points}\n")
+                        f.write("\n")
+                    
+                    f.write("\n" + "=" * 60 + "\n")
+                    f.write(f"Exported: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                
+                return True, f"League exported to {filepath}"
+            
+            except Exception as e:
+                return False, f"Failed to export league: {str(e)}"
+        
+        else:
+            return False, f"Unsupported format: {format_type}"
+    def validate_for_scheduling(self) -> tuple[bool, str]:
+       
+        if not self.current_league:
+            return False, "No active league"
+        
+        return self.current_league.validate_for_scheduling()
+    
+    def list_teams(self) -> list[dict]:
+       
+        if not self.current_league:
+            return []
+        
+        return [team.to_dict() for team in self.current_league.teams]
+    
+    def get_league_summary(self) -> dict:
+       
+        if not self.current_league:
+            return {}
+        
+        return {
+            "name": self.current_league.name,
+            "season": self.current_league.season,
+            "team_count": len(self.current_league.teams),
+            "fixtures_generated": self.current_league.fixtures_generated,
+            "total_matches": len(self.current_league.matches)
+        }
