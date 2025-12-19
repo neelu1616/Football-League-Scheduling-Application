@@ -13,7 +13,7 @@ Implements user stories B1-B9:
 - B9: Auto-Regenerate Fixtures After Team Changes
 """
 
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime, timedelta
 
 import sys
