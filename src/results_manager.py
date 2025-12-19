@@ -109,10 +109,10 @@ class ResultsManager:
         
         return "\n".join(lines)
          
-         def get_team_form(self, team_identifier: str) -> dict:
+        def get_team_form(self, team_identifier: str) -> dict:
        
-        if not self.league:
-            return {}
+                if not self.league:
+                  return {}
         
         team = self.league.get_team_by_name(team_identifier)
         if not team:
@@ -165,13 +165,15 @@ class ResultsManager:
         }
         def get_weekly_fixtures(self, week: Optional[int] = None) -> Dict[int, List[dict]]:
        
-        if not self.league:
+         if not self.league:
             return {}
         
         fixtures_by_week = defaultdict(list)
         
         for match in self.league.matches:
+          
             if week is None or match.week == week:
+               
                 fixtures_by_week[match.week].append(match.to_dict())
         
         return dict(fixtures_by_week)
