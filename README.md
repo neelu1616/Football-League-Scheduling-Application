@@ -7,9 +7,9 @@ A comprehensive Football League Management System implementing Agile, software m
 
 ## Team Members
 
-- **Mahir** - League & Team Management (Member A)
-- **Abhishek** - Scheduling Engine & Constraints (Member B)
-- **Neel** - Ranking, Results & Presentation (Member C)
+- **Mahir** - League & Team Management (Member B)
+- **Abhishek** - Scheduling Engine & Constraints (Member C)
+- **Neel** - Ranking, Results & Presentation (Member A)
 - **Dhaval** - Metrics, Testing & Symbolic/Concolic Analysis (Member D)
 
 ## Project Structure
