@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from member_a_Neel.league_manager import LeagueManager
 from member_b_Mahir.fixture_scheduler import FixtureScheduler
 from member_c_Abhishek.results_manager import ResultsManager
-from member_d_Dhawal.diagnostics_engine import DiagnosticsEngine
+from member_d_dhawal.diagnostics_engine import DiagnosticsEngine
 
 
 class FootballLeagueCLI:
