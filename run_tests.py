@@ -16,10 +16,20 @@ def run_member_tests(member_name=None):
     env = os.environ.copy()
     env['PYTHONPATH'] = script_dir + os.pathsep + env.get('PYTHONPATH', '')
     
-    base_path = "tests"
+    # Map member names to actual directory names
+    member_map = {
+        "a_neel": "member_a_neel",
+        "b_mahir": "member_b_mahir",
+        "c_abhishek": "member_c_abhishek",
+        "d_dhawal": "member_d_dhawal"
+    }
     
     if member_name:
-        test_path = os.path.join(base_path, f"member_{member_name}")
+        member_dir = member_map.get(member_name)
+        if not member_dir:
+            print(f"❌ Unknown member: {member_name}")
+            return False
+        test_path = os.path.join(member_dir, "test")
         if not os.path.exists(test_path):
             print(f"❌ Test directory not found: {test_path}")
             return False
@@ -27,7 +37,8 @@ def run_member_tests(member_name=None):
         cmd = ["pytest", test_path, "-v", "--tb=short"]
     else:
         print("\n🧪 Running ALL member tests...\n")
-        cmd = ["pytest", base_path, "-v", "--tb=short"]
+        test_paths = [os.path.join(member_map[m], "test") for m in member_map]
+        cmd = ["pytest"] + test_paths + ["-v", "--tb=short"]
     
     try:
         result = subprocess.run(cmd, check=False, env=env)
@@ -46,22 +57,26 @@ def run_with_coverage(member_name=None):
     env = os.environ.copy()
     env['PYTHONPATH'] = script_dir + os.pathsep + env.get('PYTHONPATH', '')
     
-    base_path = "tests"
+    # Map member names to actual directory names
+    member_map = {
+        "a_neel": "member_a_neel",
+        "b_mahir": "member_b_mahir",
+        "c_abhishek": "member_c_abhishek",
+        "d_dhawal": "member_d_dhawal"
+    }
     
     if member_name:
-        test_path = os.path.join(base_path, f"member_{member_name}")
-        module_map = {
-            "a_neel": "member_a_Neel",
-            "b_mahir": "member_b_Mahir",
-            "c_abhishek": "member_c_Abhishek",
-            "d_dhawal": "member_d_dhawal"
-        }
-        module = module_map.get(member_name, f"member_{member_name}")
+        member_dir = member_map.get(member_name)
+        if not member_dir:
+            print(f"❌ Unknown member: {member_name}")
+            return False
+        test_path = os.path.join(member_dir, "test")
         print(f"\n📊 Running tests with coverage for Member {member_name.upper()}...\n")
         cmd = ["pytest", test_path, "-v", "--cov", "--cov-report=term-missing", "--cov-report=html"]
     else:
         print("\n📊 Running ALL tests with coverage...\n")
-        cmd = ["pytest", base_path, "-v", "--cov", "--cov-report=term-missing", "--cov-report=html"]
+        test_paths = [os.path.join(member_map[m], "test") for m in member_map]
+        cmd = ["pytest"] + test_paths + ["-v", "--cov", "--cov-report=term-missing", "--cov-report=html"]
     
     try:
         result = subprocess.run(cmd, check=False, env=env)
