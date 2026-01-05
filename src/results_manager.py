@@ -105,14 +105,13 @@ class ResultsManager:
             lines.append(line)
         
         lines.append("=" * 90)
-
         
         return "\n".join(lines)
-         
-        def get_team_form(self, team_identifier: str) -> dict:
-       
-                if not self.league:
-                  return {}
+    
+    def get_team_form(self, team_identifier: str) -> dict:
+        """Get team form and statistics."""
+        if not self.league:
+            return {}
         
         team = self.league.get_team_by_name(team_identifier)
         if not team:
@@ -163,20 +162,22 @@ class ResultsManager:
             "form": "".join(form),
             "win_percentage": (team.won / team.played * 100) if team.played > 0 else 0
         }
-        def get_weekly_fixtures(self, week: Optional[int] = None) -> Dict[int, List[dict]]:
-       
-         if not self.league:
+    
+    def get_weekly_fixtures(self, week: Optional[int] = None) -> Dict[int, List[dict]]:
+        """Get fixtures by week."""
+        if not self.league:
             return {}
         
         fixtures_by_week = defaultdict(list)
         
         for match in self.league.matches:
-          
+            # Filter by week if specified
             if week is None or match.week == week:
-               
+                # Add match to its week bucket
                 fixtures_by_week[match.week].append(match.to_dict())
         
         return dict(fixtures_by_week)
+    
     def export_standings(self, filepath: str, format_type: str = "csv") -> tuple[bool, str]:
         
         if not self.table:
@@ -209,10 +210,10 @@ class ResultsManager:
         
         except Exception as e:
             return False, f"Export failed: {str(e)}"
-        
-        def get_head_to_head(self, team1_identifier: str, team2_identifier: str) -> dict:
-        
-          if not self.league:
+    
+    def get_head_to_head(self, team1_identifier: str, team2_identifier: str) -> dict:
+        """Get head-to-head statistics between two teams."""
+        if not self.league:
             return {}
         
         team1 = self.league.get_team_by_name(team1_identifier)
