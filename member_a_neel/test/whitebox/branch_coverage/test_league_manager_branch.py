@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
 
-from member_a_Neel.league_manager import LeagueManager
+from rankings.league_manager import LeagueManager
 
 
 class TestLeagueManagerBranchCoverage:

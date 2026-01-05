@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent.parent))
 
-from member_d_dhawal.diagnostics_engine import DiagnosticsEngine
+from diagnostics.diagnostics_engine import DiagnosticsEngine
 from src.domain.league import League
 from src.domain.team import Team
 
