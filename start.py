@@ -129,22 +129,23 @@ def run_tests():
     
     choice = input("\nEnter your choice (0-6): ").strip()
     
-    test_commands = {
-        "1": ["pytest", "tests/", "-v"],
-        "2": ["pytest", "tests/member_a_neel/", "-v"],
-        "3": ["pytest", "tests/member_b_mahir/", "-v"],
-        "4": ["pytest", "tests/member_c_abhishek/", "-v"],
-        "5": ["pytest", "tests/member_d_dhawal/", "-v"],
-        "6": ["pytest", "tests/", "-v", "--cov", "--cov-report=term-missing", "--cov-report=html"]
+    # Map choices to run_tests.py commands
+    command_map = {
+        "1": ["python", "run_tests.py", "all"],
+        "2": ["python", "run_tests.py", "a_neel"],
+        "3": ["python", "run_tests.py", "b_mahir"],
+        "4": ["python", "run_tests.py", "c_abhishek"],
+        "5": ["python", "run_tests.py", "d_dhawal"],
+        "6": ["python", "run_tests.py", "coverage"]
     }
     
     if choice == "0":
         return
     
-    if choice in test_commands:
+    if choice in command_map:
         print(f"\n🧪 Running tests...\n")
         try:
-            result = subprocess.run(test_commands[choice])
+            result = subprocess.run(command_map[choice])
             if choice == "6":
                 print("\n📊 Coverage report generated in: htmlcov/index.html")
             print("\n" + "=" * 70)
@@ -154,9 +155,9 @@ def run_tests():
                 print("⚠️  Some tests failed. Check output above.")
             print("=" * 70)
         except FileNotFoundError:
-            print("❌ pytest not found. Installing...")
-            check_test_dependencies()
-            print("Please try again.")
+            print("❌ run_tests.py or pytest not found.")
+            print("Please ensure run_tests.py exists and pytest is installed:")
+            print("   pip install pytest pytest-cov")
         except Exception as e:
             print(f"❌ Error running tests: {e}")
     else:
